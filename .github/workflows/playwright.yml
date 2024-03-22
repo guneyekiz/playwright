@@ -1,4 +1,5 @@
 name: Playwright Tests with Allure Report
+
 on:
   push:
     branches: [ guney, develop ]
@@ -15,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '16' # Ensuring string format for version
+          node-version: '20.11.1'
           cache: 'npm'
 
       - name: Install dependencies
@@ -42,17 +43,10 @@ jobs:
           name: playwright-allure-report
           path: allure-report/
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' }}
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./allure-report
-
   publish_report:
     name: Publish HTML Report
-    if: "success() || needs.test-and-deploy.result == 'failure'" # Corrected job name reference
-    needs: [test-and-deploy] # Corrected job name reference
+    if: "success() || needs.test-and-deploy.result == 'failure'"
+    needs: [test-and-deploy]
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
@@ -70,21 +64,24 @@ jobs:
       - name: Download zipped HTML report
         uses: actions/download-artifact@v2
         with:
-          name: playwright-allure-report # Corrected artifact name to match upload
+          name: playwright-allure-report
           path: ${{ env.HTML_REPORT_URL_PATH }}
 
       - name: Push HTML Report
         timeout-minutes: 3
         run: |
           git add .
-          git commit -m "Add HTML report for run-id ${{ github.run_id }} (attempt: ${{ github.run_attempt }})"
+          git commit -m "workflow: add HTML report for run-id ${{ github.run_id }} (attempt: ${{ github.run_attempt }})"
           while true; do
             git pull --rebase
-            if git push; then
-              echo "Successfully pushed HTML report to repo."
+            if [ $? -ne 0 ]; then
+              echo "Failed to rebase. Please review manually."
+              exit 1
+            fi
+            git push
+            if [ $? -eq 0 ]; then
               break
             fi
-            echo "Retrying push..."
           done
 
       - name: Output Report URL as Workflow Annotation
