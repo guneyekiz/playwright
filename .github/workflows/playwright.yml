@@ -4,6 +4,7 @@ on:
     branches: [ guney, develop ]
   pull_request:
     branches: [ guney, develop ]
+
 jobs:
   test-and-deploy:
     timeout-minutes: 60
@@ -14,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 16 # Specify your project's required Node.js version
+          node-version: '16' # Ensuring string format for version
           cache: 'npm'
 
       - name: Install dependencies
@@ -23,14 +24,12 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      # Add step to install allure-playwright package
       - name: Install Allure reporter for Playwright
         run: npm install -D allure-playwright
 
-      # Update to use the installed allure-playwright reporter
       - name: Run Playwright tests with Allure reporter
         run: npx playwright test --reporter=dot,allure-playwright
-      
+
       - name: Install Allure Commandline
         run: npm install -g allure-commandline
 
@@ -45,7 +44,50 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./allure-report
+
+  publish_report:
+    name: Publish HTML Report
+    if: "success() || needs.test-and-deploy.result == 'failure'" # Corrected job name reference
+    needs: [test-and-deploy] # Corrected job name reference
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      HTML_REPORT_URL_PATH: reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: gh-pages
+
+      - name: Set Git User
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Download zipped HTML report
+        uses: actions/download-artifact@v2
+        with:
+          name: playwright-allure-report # Corrected artifact name to match upload
+          path: ${{ env.HTML_REPORT_URL_PATH }}
+
+      - name: Push HTML Report
+        timeout-minutes: 3
+        run: |
+          git add .
+          git commit -m "Add HTML report for run-id ${{ github.run_id }} (attempt: ${{ github.run_attempt }})"
+          while true; do
+            git pull --rebase
+            if git push; then
+              echo "Successfully pushed HTML report to repo."
+              break
+            fi
+            echo "Retrying push..."
+          done
+
+      - name: Output Report URL as Workflow Annotation
+        run: |
+          FULL_HTML_REPORT_URL="https://guneyekiz.github.io/playwright/${{ env.HTML_REPORT_URL_PATH }}"
+          echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
