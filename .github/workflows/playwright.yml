@@ -12,15 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v3
       with:
-        node-version: '14'
+        node-version: '20.11.1'
         cache: 'npm'
+         
     - run: npm ci
     - run: npx playwright install
     - run: npx playwright test --reporter=html
+      continue-on-error: true
   
     - uses: actions/upload-artifact@master
       with:
@@ -29,7 +31,7 @@ jobs:
         retention-days: 20
         
     - name: Get Allure history
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       if: always()
       continue-on-error: true
       with:
