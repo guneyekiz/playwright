@@ -2,56 +2,55 @@ name: ci
 
 on:
   push:
-    branches: [ guney ]
+    branches: [ main ]
   pull_request:
-    branches: [ guney ]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-
+    - uses: actions/checkout@v3 # Updated to v3
     - name: Use Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v3 # Updated to v3
       with:
-        node-version: '20.11.1'
+        node-version: '14' # You can specify a newer version of Node.js if your project allows
         cache: 'npm'
-
     - run: npm ci
     - run: npx playwright install
-    - run: npx playwright test --reporter=html
-      continue-on-error: true
-
-    - uses: actions/upload-artifact@v3
-      with:
-        name: playwright-results
-        path: playwright-report
-        retention-days: 20
-
-    - uses: actions/upload-artifact@v3
+    - run: npm test
+  
+    - uses: actions/upload-artifact@v3 # Updated to v3
       with:
         name: allure-results
         path: allure-results
         retention-days: 20
-
-    - name: Deploy Playwright Report to Github Pages
+        
+    - name: Get Allure history
+      uses: actions/checkout@v3 # Updated to v3
       if: always()
-      uses: peaceiris/actions-gh-pages@v3.8.0
+      continue-on-error: true
+      with:
+        ref: gh-pages
+        path: gh-pages
+    
+    # This action might not have a newer version, please verify if there's an update available
+    - name: Test marketplace action
+      uses: simple-elf/allure-report-action@master
+      if: always()
+      id: allure-report
+      with:
+        allure_results: allure-results
+        gh_pages: gh-pages
+        allure_report: allure-report
+        allure_history: allure-history
+        keep_reports: 20
+
+    - name: Deploy report to Github Pages
+      if: always()
+      uses: peaceiris/actions-gh-pages@v3 # Updated to v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: playwright-report
-        keep_files: true
-        user_name: 'github-actions[bot]'
-        user_email: 'github-actions[bot]@users.noreply.github.com'
-
-    - name: Deploy Allure Report to Github Pages
-      if: always()
-      uses: peaceiris/actions-gh-pages@v3.8.0
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: allure-report
-        keep_files: true
-        user_name: 'github-actions[bot]'
-        user_email: 'github-actions[bot]@users.noreply.github.com'
+        publish_branch: gh-pages # Changed to `publish_branch`, as `PUBLISH_BRANCH` is for environment variables
+        publish_dir: ./allure-report # Updated to reflect the directory that contains your index.html
