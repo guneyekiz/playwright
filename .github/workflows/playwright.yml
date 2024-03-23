@@ -2,9 +2,9 @@ name: Allure Report CI with Playwright
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "guney" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "guney" ]
 
 jobs:
   build:
