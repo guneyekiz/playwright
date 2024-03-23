@@ -1,70 +1,68 @@
-name: Allure Report CI with Playwright
-
+name: Playwright Tests on Guney Branch
 on:
   push:
-    branches: [ "guney" ]
-  pull_request:
-    branches: [ "guney" ]
-
+    branches: [guney] # Run actions on pushes to the guney branch
 jobs:
-  build:
+  test:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
         with:
-          node-version: '20.x'
-          cache: 'npm'
-
+          node-version: "14.x"
       - name: Install dependencies
-        run: npm install
+        run: yarn
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run Playwright tests
+        run: yarn playwright test
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
 
-      - name: Install system dependencies for Playwright
+  publish_report:
+    name: Publish HTML Report to gh-pages
+    if: "success() || needs.test.result == 'failure'"
+    needs: [test]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      HTML_REPORT_URL_PATH: reports/guney/${{ github.run_id }}/${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: gh-pages # Check out the gh-pages branch
+      - name: Set Git User
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget software-properties-common
-          sudo apt-get install -y libgtk-3-0 libgbm-dev libnss3 libatk-bridge2.0-0 libasound2
-          sudo apt-get install -y libxshmfence-dev libxrandr2 libxfixes3 libxcursor1 libxdamage1 libxi6
-          sudo apt-get install -y libxtst6 libcups2 libxcomposite1 libxss1 libxkbcommon0
-
-      - name: Set up Playwright
-        run: npx playwright install
-
-      - name: Run tests with Playwright
-        run: npx playwright test --reporter=junit,allure-playwright
-
-      - uses: actions/upload-artifact@master
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Download zipped HTML report
+        uses: actions/download-artifact@v2
         with:
-          name: allure-results
-          path: allure-results
-          retention-days: 20
-
-      - name: Get Allure history
-        uses: actions/checkout@v2
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-
-      - name: Test marketplace action
-        uses: simple-elf/allure-report-action@master
-        if: always()
-        id: allure-report
-        with:
-          allure_results: allure-results
-          gh_pages: gh-pages
-          allure_report: allure-report
-          allure_history: allure-history
-          keep_reports: 20
-
-      - name: Deploy report to Github Pages
-        if: always()
-        uses: peaceiris/actions-gh-pages@v2
-        env:
-          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: ./allure-report
+          name: playwright-report
+          path: ${{ env.HTML_REPORT_URL_PATH }}
+      - name: Push HTML Report
+        timeout-minutes: 3
+        run: |
+          git add .
+          git commit -m "workflow: add HTML report for run-id ${{ github.run_id }} (attempt:  ${{ github.run_attempt }})"
+          while true; do
+            git pull --rebase
+            if [ $? -ne 0 ]; then
+              echo "Failed to rebase. Please review manually."
+              exit 1
+            fi
+            git push
+            if [ $? -eq 0 ]; then
+              echo "Successfully pushed HTML report to repo."
+              exit 0
+            fi
+          done
+      - name: Output Report URL as Workflow Annotation
+        run: |
+          FULL_HTML_REPORT_URL=https://guneyekiz.github.io/playwright/${{ env.HTML_REPORT_URL_PATH }}
+          echo "::notice title=📋 Published Playwright Test Report::$FULL_HTML_REPORT_URL"
