@@ -1,6 +1,6 @@
 name: CI and Deploy to GitHub Pages
 
-on:  
+on:
   push:
     branches: [main]
   pull_request:
@@ -35,6 +35,7 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          git config --global credential.helper store
 
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
@@ -57,16 +58,13 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             git commit -m "Deploy Playwright report"
+            git push -fu origin gh-pages
           else
             echo "No changes to commit to gh-pages."
           fi
-
-      - name: Push changes using PAT
         env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-        run: |
-          git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }}/gh-pages
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}  # Use the PAT here
 
       - name: Output Playwright report URL
         run: | 
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
