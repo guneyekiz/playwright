@@ -1,69 +1,64 @@
-name: Continuous Integration and Deployment
+name: CI/CD Workflow
 
-on: 
+on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  test-and-deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
-
-      # Setup Node.js environment
+      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16' # Replace with the version of Node.js that matches your project requirements
+          node-version: '16'
 
-      # Install npm dependencies and Playwright
-      - name: Install dependencies and Playwright
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright and browsers
         run: |
-          npm ci
           npm install playwright
+          npx playwright install
 
-      # Install the browsers required by Playwright
-      - name: Install Playwright browsers
-        run: npx playwright install
-
-      # Run Playwright tests and generate the HTML report
       - name: Run Playwright tests
         run: npx playwright test --reporter=html --output=playwright-report
 
-      # Upload the Playwright HTML report as an artifact (optional step)
-      - name: Upload report
+      - name: Upload Playwright report as an artifact (Optional)
         uses: actions/upload-artifact@v3
         with:
           name: playwright-report
           path: playwright-report
-
-      # Deploy the Playwright report to GitHub Pages using a manual script
+      
       - name: Deploy to GitHub Pages
-        if: success() # This ensures deployment only if previous steps were successful
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
-          # Configure git
+          # Setup git with GitHub Actions bot
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           
-          # Fetch and checkout the gh-pages branch
-          git fetch --depth=1 origin gh-pages
-          git stash # Stash any changes
-          git checkout gh-pages || git checkout -b gh-pages
-          git rm -rf . # Remove all current files
+          # Check if gh-pages branch exists
+          if git ls-remote --exit-code origin gh-pages; then
+            git fetch origin gh-pages:gh-pages
+            git worktree add gh-pages gh-pages
+          else
+            git worktree add gh-pages HEAD
+            git -C gh-pages checkout --orphan gh-pages
+          fi
           
-          # Copy new report files from the artifact
-          cp -R playwright-report/* .
+          # Clean gh-pages branch content and copy new report
+          rm -rf gh-pages/*
+          cp -R playwright-report/* gh-pages/
           
-          # Add and commit changes
-          git add .
-          git commit -m "Deploy Playwright report to GitHub Pages" --allow-empty
-          
-          # Push changes back to the remote gh-pages branch using the token
-          git push --force "https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}" gh-pages
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          # Commit and push changes
+          git -C gh-pages add --all
+          git -C gh-pages commit -m "Deploy Playwright report to GitHub Pages" || echo "No changes to commit"
+          git -C gh-pages push --force "https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}" gh-pages
+
