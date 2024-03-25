@@ -36,7 +36,7 @@ jobs:
         run: npx playwright test --reporter=html
 
       # Upload the Playwright HTML report as an artifact
-      - name: Upload report 
+      - name: Upload report
         uses: actions/upload-artifact@v2
         with:
           name: playwright-report
@@ -48,7 +48,8 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git checkout --orphan gh-pages
+          git fetch --depth=1 origin gh-pages
+          git checkout -B gh-pages
           git rm -rf .
           cp -R playwright-report/* .
           git add .
