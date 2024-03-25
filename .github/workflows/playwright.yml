@@ -48,7 +48,7 @@ jobs:
           fi
 
       - name: Clear out gh-pages branch contents
-        run: git rm -rf . || true
+        run: git rm -rf . || true 
 
       - name: Copy Playwright report to gh-pages
         run: cp -r playwright-report/* . || echo "No Playwright report found to copy."
