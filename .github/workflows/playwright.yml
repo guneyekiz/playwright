@@ -10,52 +10,50 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Adjusted to read, as write is not available in your settings
+      contents: read
 
     steps:
       - uses: actions/checkout@v2
         with:
-          token: ${{ secrets.ACCESS_TOKEN }} # Use the PAT for checking out code
+          token: ${{ secrets.ACCESS_TOKEN }}
+
       - name: Use Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '14'
           cache: 'npm'
+
       - run: npm ci
       - run: npx playwright install
-      - run: npm test
-
+      
+      # Generate the Playwright report
+      - run: npx playwright test --reporter=html
+      
+      # Upload the Playwright report as an artifact (optional, for viewing in the Actions tab)
       - uses: actions/upload-artifact@master
         with:
-          name: allure-results
-          path: allure-results
+          name: playwright-report
+          path: playwright-report
           retention-days: 20
-        
-      - name: Get Allure history
-        uses: actions/checkout@v2
+
+      # Checkout the gh-pages branch to a specific directory
+      - uses: actions/checkout@v2
         if: always()
         continue-on-error: true
         with:
           ref: gh-pages
           path: gh-pages
-          token: ${{ secrets.ACCESS_TOKEN }} # Use the PAT for checking out the gh-pages branch
+          token: ${{ secrets.ACCESS_TOKEN }}
 
-      - name: Test marketplace action
-        uses: simple-elf/allure-report-action@master
-        if: always()
-        id: allure-report
-        with:
-          allure_results: allure-results
-          gh_pages: gh-pages
-          allure_report: allure-report
-          allure_history: allure-history
-          keep_reports: 20
-          token: ${{ secrets.ACCESS_TOKEN }} # Pass the PAT as needed, adjust according to the action's documentation
+      # Copy the Playwright report to the gh-pages directory
+      - name: Copy Playwright report to gh-pages
+        run: cp -r playwright-report/* gh-pages/
 
+      # Commit and push changes to the gh-pages branch
       - name: Deploy report to Github Pages
         if: always()
         uses: peaceiris/actions-gh-pages@v2
-        env:
-          PERSONAL_TOKEN: ${{ secrets.ACCESS_TOKEN }} # Use the PAT for GitHub Pages deployment
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: allure-history
+        with:
+          github_token: ${{ secrets.ACCESS_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./gh-pages
