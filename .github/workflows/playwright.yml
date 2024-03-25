@@ -59,7 +59,8 @@ jobs:
             git commit -m "Deploy Playwright report"
           else
             echo "No changes to commit to gh-pages."
-            
+          fi
+
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
