@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  test-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -36,16 +36,38 @@ jobs:
           name: playwright-report
           path: playwright-report
 
-      - name: Commit and Push Report to gh-pages Branch
-        if: success()
+      - name: Prepare for Deployment
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'actions@github.com'
-          git fetch --depth=1 origin gh-pages
-          git checkout origin/gh-pages --orphan TEMP_BRANCH
+          git stash push -u "Stashing changes before switching branches"
+
+      - name: Commit and Push Report to gh-pages Branch
+        if: success()
+        run: |
+          git fetch --depth=1 origin gh-pages || true
+          if git branch -r | grep -q "origin/gh-pages"; then
+            echo "gh-pages branch exists on remote."
+          else
+            echo "gh-pages branch does not exist, creating it."
+            git checkout --orphan gh-pages
+            git rm -rf .
+            git commit --allow-empty -m "Initial gh-pages commit"
+            git push origin gh-pages
+            git fetch --depth=1 origin gh-pages
+          fi
+          git checkout gh-pages
+          git stash pop || true
+          git rm -r --cached . || true
+          git clean -fdx
           git add -f playwright-report/*
           git commit -m "Deploy Playwright Report"
-          git branch -M gh-pages
           git push -f origin gh-pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output Report URL
+        run: echo "Playwright report URL: https://$GITHUB_REPOSITORY_OWNER.github.io/$GITHUB_REPOSITORY/playwright-report/index.html"
+        env:
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
