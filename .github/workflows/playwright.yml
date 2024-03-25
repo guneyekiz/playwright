@@ -2,11 +2,9 @@ name: CI and Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build-and-deploy:
@@ -37,21 +35,16 @@ jobs:
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
 
-      - name: Fetch gh-pages branch
-        run: |
-          git fetch origin gh-pages || true  # Fetch gh-pages branch, don't fail if it doesn't exist
+      - name: Stash changes including untracked files
+        run: git stash --include-untracked
 
-      - name: Switch to gh-pages branch or create it
+      - name: Checkout gh-pages branch or create it if doesn't exist
         run: |
           if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
-            # If gh-pages branch exists, switch to it
             git checkout gh-pages
             git reset --hard origin/gh-pages
           else
-            # If gh-pages branch does not exist, create it
             git checkout --orphan gh-pages
-            git rm -rf .
-            git clean -fdx
             git commit --allow-empty -m "Initial commit on gh-pages"
             git push origin gh-pages
           fi
@@ -60,11 +53,8 @@ jobs:
         run: |
           git rm -rf . || true  # Remove all files from the working tree
           git clean -fdx  # Remove all untracked files and directories
-          # Copy the new report
-          cp -R ../playwright-report/ . || echo "Copy failed: Playwright report not found."
-          # Add all changes to git
+          cp -R ../playwright-report/ .  # Copy the new report
           git add .
-          # Commit and push if there are new changes to commit
           if ! git diff --staged --quiet; then
             git commit -m "Deploy Playwright report"
             git push -f origin gh-pages
