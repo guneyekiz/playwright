@@ -1,4 +1,4 @@
-name: Playwright Test and Deployment
+name: CI/CD Workflow
 
 on:
   push:
@@ -36,11 +36,14 @@ jobs:
           name: playwright-report
           path: playwright-report
       
+      - name: Check if gh-pages branch exists
+        run: git ls-remote --exit-code --heads origin gh-pages || git branch gh-pages
+
       - name: Deploy to GitHub Pages
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git checkout -B gh-pages
+          git checkout gh-pages
           git rm -rf .
           cp -R playwright-report/* .
           git add .
