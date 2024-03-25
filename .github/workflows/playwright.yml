@@ -1,6 +1,6 @@
 name: Continuous Integration and Deployment
 
-on: 
+on:
   push:
     branches: [main]
   pull_request:
@@ -45,23 +45,38 @@ jobs:
       - name: Deploy to gh-pages
         if: success()
         run: |
-          git fetch --depth=1 origin gh-pages || true
-          if ! git branch -r | grep -q 'origin/gh-pages'; then
+          # Check if the gh-pages branch exists and switch to it; otherwise, create it
+          if git ls-remote --exit-code origin gh-pages; then
+            echo "Fetching gh-pages branch."
+            git fetch origin gh-pages:gh-pages
+            git checkout gh-pages
+          else
+            echo "Creating gh-pages branch."
             git checkout --orphan gh-pages
-            git rm -rf .
-            git clean -fdx
+            git reset --hard
             git commit --allow-empty -m "Initial gh-pages commit"
             git push origin gh-pages
+            git fetch origin
+            git checkout gh-pages
           fi
-          git checkout -f gh-pages
+          
+          # Clean current branch's directory (gh-pages) except the .git directory
           git rm -rf .
-          git checkout stash -- .
-          git add -f playwright-report
-          git commit -m "Update Playwright Report"
-          git push -f origin gh-pages
+          git clean -fdx -e .git
+
+          # Restore files from stash or previous steps
+          git checkout stash -- playwright-report || echo "No stash to apply."
+          
+          # Add and commit changes
+          git add -f playwright-report/*
+          if git status | grep -q "Changes to be committed"; then
+            git commit -m "Update Playwright Report"
+            git push -f origin gh-pages
+          else
+            echo "No changes to commit."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Output Report URL
         run: |
-          echo "Playwright report URL: https://$(echo $GITHUB_REPOSITORY | cut -d'/' -f1).github.io/$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)/playwright-report/index.html"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/index.html"
