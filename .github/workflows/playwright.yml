@@ -1,19 +1,19 @@
 name: CI and Deploy to GitHub Pages
 
-on:
+on: 
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -22,46 +22,46 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright and browsers
-        run: |
-          npm install playwright
-          npx playwright install
+      - name: Install Playwright
+        run: npm install playwright
+
+      - name: Install browsers
+        run: npx playwright install
 
       - name: Run Playwright tests
         run: npx playwright test --reporter=html
 
       - name: Configure Git
         run: |
-          git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
-      - name: Stash changes including untracked files
-        run: git stash --include-untracked
+      - name: Stash package files to prevent checkout issues
+        run: git stash push -- package-lock.json package.json
 
-      - name: Checkout gh-pages branch or create it if doesn't exist
+      - name: Checkout gh-pages branch
         run: |
-          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
-            git checkout gh-pages
-            git reset --hard origin/gh-pages
-          else
-            git checkout --orphan gh-pages
-            git commit --allow-empty -m "Initial commit on gh-pages"
-            git push origin gh-pages
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
           fi
 
-      - name: Deploy Playwright Report to gh-pages
+      - name: Clear out gh-pages branch contents
+        run: git rm -rf . || true
+
+      - name: Copy Playwright report to gh-pages
+        run: cp -r playwright-report/* . || echo "No Playwright report found to copy."
+
+      - name: Commit Playwright report to gh-pages
         run: |
-          git rm -rf . || true  # Remove all files from the working tree
-          git clean -fdx  # Remove all untracked files and directories
-          cp -R ../playwright-report/ .  # Copy the new report
-          git add .
-          if ! git diff --staged --quiet; then
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
             git commit -m "Deploy Playwright report"
-            git push -f origin gh-pages
+            git push -fu origin gh-pages
           else
-            echo "No changes to deploy."
+            echo "No changes to commit to gh-pages."
           fi
 
       - name: Output Playwright report URL
         run: | 
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
