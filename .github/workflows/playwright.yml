@@ -1,6 +1,6 @@
-name: CI/CD Workflow
+name: Playwright Test and Deployment
 
-on: 
+on:
   push:
     branches: [main]
   pull_request:
@@ -22,9 +22,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Create Playwright Report Directory
-        run: mkdir playwright-report
-
       - name: Install Playwright and browsers
         run: |
           npm install playwright
@@ -43,9 +40,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git fetch --depth=1 origin gh-pages
-          git stash
-          git checkout gh-pages || git checkout -b gh-pages
+          git checkout -B gh-pages
           git rm -rf .
           cp -R playwright-report/* .
           git add .
