@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: Continuous Integration and Deployment
 
 on: 
   push:
@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16' # Specify the Node.js version here
+          node-version: '16' # Replace with the version of Node.js that matches your project requirements
 
       # Install npm dependencies and Playwright
       - name: Install dependencies and Playwright
@@ -35,7 +35,7 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test --reporter=html
 
-      # Upload the Playwright HTML report as an artifact
+      # Upload the Playwright HTML report as an artifact (optional step)
       - name: Upload report
         uses: actions/upload-artifact@v3
         with:
@@ -46,16 +46,24 @@ jobs:
       - name: Deploy to GitHub Pages
         if: success() # This ensures deployment only if previous steps were successful
         run: |
+          # Configure git
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
+          
+          # Fetch and checkout the gh-pages branch
           git fetch --depth=1 origin gh-pages
+          git stash # Stash any changes
+          git checkout gh-pages || git checkout -b gh-pages
+          git rm -rf . # Remove all current files
+          
+          # Copy new report files from the artifact
+          cp -R playwright-report/* .
+          
+          # Add and commit changes
           git add .
-          git stash # Stash any changes, including package-lock.json
-          git checkout gh-pages
-          git rm -rf . # Remove all files currently in the gh-pages branch
-          cp -R playwright-report/* . # Copy report to gh-pages branch
-          git add .
-          git commit -m "Deploy Playwright report to GitHub Pages"
-          git push origin gh-pages
+          git commit -m "Deploy Playwright report to GitHub Pages" --allow-empty
+          
+          # Push changes back to the remote gh-pages branch
+          git push origin gh-pages --force
         env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
