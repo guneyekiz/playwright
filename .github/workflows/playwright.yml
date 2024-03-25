@@ -42,7 +42,7 @@ jobs:
           name: playwright-report
           path: playwright-report
 
-      # Deploy the Playwright report to GitHub Pages
+      # Deploy the Playwright report to GitHub Pages  
       - name: Deploy to GitHub Pages
         if: success() # This ensures deployment only if previous steps were successful
         uses: peaceiris/actions-gh-pages@v3
