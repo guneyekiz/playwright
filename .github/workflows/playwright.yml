@@ -2,14 +2,12 @@ name: CI and Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  deploy-report:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +24,9 @@ jobs:
           npm ci
           npm install playwright
       
+      - name: Install Playwright browsers
+        run: npx playwright install
+      
       - name: Run Playwright tests
         run: npx playwright test --reporter=html
       
@@ -37,23 +38,23 @@ jobs:
       - name: Checkout gh-pages branch or create it
         run: |
           git fetch origin gh-pages:gh-pages || true
-          if git branch -r | grep 'origin/gh-pages'; then
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
             git checkout gh-pages
           else
             git checkout --orphan gh-pages
-            git rm -rf .
-            git clean -fdx
-            git commit --allow-empty -m "Initial gh-pages commit"
+            git reset --hard
+            git commit --allow-empty -m "Initial commit on gh-pages"
             git push origin gh-pages
           fi
       
-      - name: Deploy Playwright Report
+      - name: Deploy Playwright Report to gh-pages
         run: |
-          git rm -rf . || true
-          git clean -fdx || true
-          cp -r ../playwright-report .
+          git rm -rf . || true # Remove all files (clean slate)
+          git clean -fdx # Remove untracked files and directories
+          # Assuming 'playwright-report' is generated at the root
+          cp -R playwright-report/ . || echo "Playwright report not found."
           git add -A
-          git commit -m "Deploy updated Playwright report" || echo "No changes to commit"
+          git commit -m "Deploy updated Playwright report [skip ci]" || echo "No changes to commit."
           git push -f origin gh-pages
       
       - name: Output Playwright report URL
