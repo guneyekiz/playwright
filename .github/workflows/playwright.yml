@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build-and-deploy:
+  test-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,27 +18,31 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-      
+
       - name: Install dependencies
         run: |
           npm ci
+          
+      - name: Install Playwright and browsers
+        run: |
           npm install playwright
-      
-      - name: Install Playwright browsers
-        run: npx playwright install
-      
+          npx playwright install
+
       - name: Run Playwright tests
         run: npx playwright test --reporter=html
-      
+
       - name: Configure Git
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-      
-      - name: Checkout gh-pages branch or create it
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+      - name: Stash changes to handle package-lock.json and package.json
+        run: git stash --include-untracked
+
+      - name: Prepare gh-pages branch
         run: |
-          git fetch origin gh-pages:gh-pages || true
-          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+          git fetch origin gh-pages
+          if git branch -r | grep -qw "origin/gh-pages"; then
             git checkout gh-pages
           else
             git checkout --orphan gh-pages
@@ -46,17 +50,20 @@ jobs:
             git commit --allow-empty -m "Initial commit on gh-pages"
             git push origin gh-pages
           fi
-      
-      - name: Deploy Playwright Report to gh-pages
+
+      - name: Deploy Playwright Report
         run: |
-          git rm -rf . || true # Remove all files (clean slate)
-          git clean -fdx # Remove untracked files and directories
-          # Assuming 'playwright-report' is generated at the root
-          cp -R playwright-report/ . || echo "Playwright report not found."
-          git add -A
-          git commit -m "Deploy updated Playwright report [skip ci]" || echo "No changes to commit."
-          git push -f origin gh-pages
-      
+          git rm -rf . || echo "Cleaning gh-pages"
+          git clean -fdx
+          cp -R ../playwright-report/ . || echo "Copying Playwright report failed."
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to deploy."
+          else
+            git commit -m "Deploy Playwright report"
+            git push -f origin gh-pages
+          fi
+
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/index.html"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
