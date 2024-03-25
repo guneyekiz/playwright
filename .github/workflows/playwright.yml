@@ -13,58 +13,63 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-
+      
       - name: Install dependencies and Playwright
         run: npm ci && npm install playwright
-
+      
       - name: Install Playwright browsers
         run: npx playwright install
-
+      
       - name: Run Playwright tests
         run: npx playwright test --reporter=html
-
+      
       - name: Upload report
         uses: actions/upload-artifact@v3
         with:
           name: playwright-report
           path: playwright-report
 
-      - name: Stash changes
+      - name: Stash changes including untracked files
         run: git stash push --include-untracked
 
       - name: Checkout gh-pages branch or create it if doesn't exist
         run: |
-          if git ls-remote --heads origin gh-pages | grep gh-pages; then
-            echo "gh-pages branch exists."
-            git fetch origin gh-pages:gh-pages
+          if git branch -r | grep gh-pages; then
+            git fetch origin gh-pages
             git checkout gh-pages
           else
-            echo "Creating gh-pages branch."
             git checkout --orphan gh-pages
-            git reset --hard
-            git commit --allow-empty -m "Initial gh-pages commit"
+            git rm -rf .
+            git clean -fdx
+            git commit --allow-empty -m "Initial commit for gh-pages"
             git push origin gh-pages
-            git fetch origin
-            git checkout gh-pages
           fi
 
-      - name: Apply stashed changes (if any)
-        run: git stash apply || echo "No stash found."
-
-      - name: Update gh-pages branch with new report
+      - name: Clear current gh-pages content
         run: |
           git rm -rf . || echo "No files to remove."
-          git clean -fdx || echo "No files to clean."
-          git checkout ${{ github.sha }} -- playwright-report
-          git add -f playwright-report
-          git commit -m "Deploy Playwright Report [skip ci]" || echo "No changes to commit."
-          git push origin gh-pages
+          git clean -fdx -e .git -e node_modules || echo "No files to clean."
+      
+      - name: Checkout Playwright report from stash
+        run: |
+          git stash apply || echo "No stash to apply."
+          git add playwright-report || echo "No playwright-report directory to add."
+          git status
+      
+      - name: Commit and push if there are changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "Update Playwright report"
+            git push origin gh-pages
+          else
+            echo "No changes to commit."
+          fi
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/index.html"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/index.html"
