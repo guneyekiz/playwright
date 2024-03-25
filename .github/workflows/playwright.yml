@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: Continuous Integration and Deployment
 
 on: 
   push:
@@ -13,61 +13,55 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
-
+      
       - name: Install dependencies and Playwright
         run: |
           npm ci
           npm install playwright
-
+      
       - name: Install Playwright browsers
         run: npx playwright install
-
+      
       - name: Run Playwright tests
         run: npx playwright test --reporter=html
-
+      
       - name: Upload report
         uses: actions/upload-artifact@v3
         with:
           name: playwright-report
           path: playwright-report
-
+      
       - name: Prepare for Deployment
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'actions@github.com'
-          git stash push -u "Stashing changes before switching branches"
-
-      - name: Commit and Push Report to gh-pages Branch
+          git stash --include-untracked
+      
+      - name: Deploy to gh-pages
         if: success()
         run: |
           git fetch --depth=1 origin gh-pages || true
-          if git branch -r | grep -q "origin/gh-pages"; then
-            echo "gh-pages branch exists on remote."
-          else
-            echo "gh-pages branch does not exist, creating it."
+          if ! git branch -r | grep -q 'origin/gh-pages'; then
             git checkout --orphan gh-pages
             git rm -rf .
+            git clean -fdx
             git commit --allow-empty -m "Initial gh-pages commit"
             git push origin gh-pages
-            git fetch --depth=1 origin gh-pages
           fi
-          git checkout gh-pages
-          git stash pop || true
-          git rm -r --cached . || true
-          git clean -fdx
-          git add -f playwright-report/*
-          git commit -m "Deploy Playwright Report"
+          git checkout -f gh-pages
+          git rm -rf .
+          git checkout stash -- .
+          git add -f playwright-report
+          git commit -m "Update Playwright Report"
           git push -f origin gh-pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: Output Report URL
-        run: echo "Playwright report URL: https://$GITHUB_REPOSITORY_OWNER.github.io/$GITHUB_REPOSITORY/playwright-report/index.html"
-        env:
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "Playwright report URL: https://$(echo $GITHUB_REPOSITORY | cut -d'/' -f1).github.io/$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)/playwright-report/index.html"
