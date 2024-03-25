@@ -49,4 +49,4 @@ jobs:
           git commit -m "Deploy Playwright report to GitHub Pages" --allow-empty
           git push --force "https://guneyekiz:${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}" gh-pages
         env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }} 
