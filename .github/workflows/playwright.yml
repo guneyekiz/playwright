@@ -1,4 +1,4 @@
-name: ci
+name: CI
 
 on: 
   push:
@@ -7,39 +7,40 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out the repository
+        uses: actions/checkout@v2
         with:
           token: ${{ secrets.ACCESS_TOKEN }}
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '16' # Update this to the version of Node.js you need
 
-      - run: npm ci
-      - run: npx playwright install
-      
-      # Generate the Playwright report
-      - run: npx playwright test --reporter=html
-      
-      # Assuming playwright-report is the directory where reports are generated
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npm install playwright
+
+      - name: Install Playwright dependencies
+        run: npx playwright install-deps
+
+      - name: Run Playwright tests and generate report
+        run: npx playwright test --reporter=html
+
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: playwright-report
           path: playwright-report
 
-      # Assuming the Playwright report is named 'playwright-report'
-      - name: Deploy Playwright report to GitHub Pages
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
-        if: success() # Only run this step if the previous steps were successful
         with:
           github_token: ${{ secrets.ACCESS_TOKEN }}
           publish_branch: gh-pages
