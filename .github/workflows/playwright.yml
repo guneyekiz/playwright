@@ -37,13 +37,19 @@ jobs:
           path: playwright-report
       
       - name: Check if gh-pages branch exists
-        run: git ls-remote --exit-code --heads origin gh-pages || git branch gh-pages
-
+        run: |
+          if ! git show-ref --quiet refs/heads/gh-pages; then
+            git checkout -b gh-pages
+            git push --set-upstream origin gh-pages
+          else
+            git checkout gh-pages
+            git pull origin gh-pages
+          fi
+      
       - name: Deploy to GitHub Pages
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git checkout gh-pages
           git rm -rf .
           cp -R playwright-report/* .
           git add .
