@@ -1,56 +1,50 @@
-name: CI/CD Workflow
+name: Deploy Playwright Report
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v2
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
 
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Install Playwright and browsers
+      - name: Install dependencies and run tests
         run: |
-          npm install playwright
+          npm install
           npx playwright install
+          npx playwright test --reporter=html --output=playwright-report
 
-      - name: Run Playwright tests
-        run: npx playwright test --reporter=html --output=playwright-report
-
-      - name: Upload Playwright report as an artifact (Optional)
-        uses: actions/upload-artifact@v3
+      - name: Upload Playwright report as an artifact
+        uses: actions/upload-artifact@v2
         with:
           name: playwright-report
           path: playwright-report
-      
+
       - name: Check if gh-pages branch exists
         run: |
           if ! git show-ref --quiet refs/heads/gh-pages; then
-            git checkout -b gh-pages
-            git push --set-upstream origin gh-pages
-          else
-            git checkout gh-pages
-            git pull origin gh-pages
+            git checkout --orphan gh-pages
+            git rm -rf .
+            git commit -m "Initialize gh-pages branch" --allow-empty
+            git push origin gh-pages
           fi
       
       - name: Deploy to GitHub Pages
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git rm -rf .
+          git checkout gh-pages
+          git pull origin gh-pages --ff-only
           cp -R playwright-report/* .
           git add .
           git commit -m "Deploy Playwright report to GitHub Pages" --allow-empty
