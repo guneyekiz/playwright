@@ -1,6 +1,6 @@
 name: CI/CD Workflow
 
-on:
+on: 
   push:
     branches: [main]
   pull_request:
@@ -37,28 +37,16 @@ jobs:
           path: playwright-report
       
       - name: Deploy to GitHub Pages
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
-          # Setup git with GitHub Actions bot
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          
-          # Check if gh-pages branch exists
-          if git ls-remote --exit-code origin gh-pages; then
-            git fetch origin gh-pages:gh-pages
-            git worktree add gh-pages gh-pages
-          else
-            git worktree add gh-pages HEAD
-            git -C gh-pages checkout --orphan gh-pages
-          fi
-          
-          # Clean gh-pages branch content and copy new report
-          rm -rf gh-pages/*
-          cp -R playwright-report/* gh-pages/
-          
-          # Commit and push changes
-          git -C gh-pages add --all
-          git -C gh-pages commit -m "Deploy Playwright report to GitHub Pages" || echo "No changes to commit"
-          git -C gh-pages push --force "https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }}" gh-pages
-
+          git fetch --depth=1 origin gh-pages
+          git stash
+          git checkout gh-pages || git checkout -b gh-pages
+          git rm -rf .
+          cp -R playwright-report/* .
+          git add .
+          git commit -m "Deploy Playwright report to GitHub Pages" --allow-empty
+          git push --force "https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
