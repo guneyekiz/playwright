@@ -1,6 +1,6 @@
 name: CI/CD Workflow
 
-on: 
+on:
   push:
     branches: [main]
   pull_request:
@@ -22,6 +22,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Create Playwright Report Directory
+        run: mkdir playwright-report
+
       - name: Install Playwright and browsers
         run: |
           npm install playwright
