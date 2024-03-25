@@ -65,7 +65,8 @@ jobs:
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
-          git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }}/gh-pages
+          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+
 
       - name: Output Playwright report URL
         run: | 
