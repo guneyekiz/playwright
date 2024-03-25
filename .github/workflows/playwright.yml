@@ -20,9 +20,8 @@ jobs:
           node-version: '16'
 
       - name: Install dependencies
-        run: |
-          npm ci
-          
+        run: npm ci
+      
       - name: Install Playwright and browsers
         run: |
           npm install playwright
@@ -36,33 +35,35 @@ jobs:
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
 
-      - name: Stash changes to handle package-lock.json and package.json
-        run: git stash --include-untracked
-
-      - name: Prepare gh-pages branch
+      - name: Check if gh-pages branch exists
+        id: check-branch
         run: |
-          git fetch origin gh-pages
-          if git branch -r | grep -qw "origin/gh-pages"; then
+          if git ls-remote --heads origin gh-pages; then
+            echo "::set-output name=exists::true"
+          else
+            echo "::set-output name=exists::false"
+          fi
+
+      - name: Checkout gh-pages branch or initialize if doesn't exist
+        run: |
+          if [ "${{ steps.check-branch.outputs.exists }}" == "true" ]; then
             git checkout gh-pages
           else
             git checkout --orphan gh-pages
             git reset --hard
             git commit --allow-empty -m "Initial commit on gh-pages"
             git push origin gh-pages
+            git checkout -b gh-pages
           fi
 
       - name: Deploy Playwright Report
         run: |
-          git rm -rf . || echo "Cleaning gh-pages"
+          git rm -rf . || true
           git clean -fdx
           cp -R ../playwright-report/ . || echo "Copying Playwright report failed."
           git add .
-          if git diff --staged --quiet; then
-            echo "No changes to deploy."
-          else
-            git commit -m "Deploy Playwright report"
-            git push -f origin gh-pages
-          fi
+          git diff --quiet || git commit -m "Deploy updated Playwright report"
+          git push -f origin gh-pages
 
       - name: Output Playwright report URL
         run: |
