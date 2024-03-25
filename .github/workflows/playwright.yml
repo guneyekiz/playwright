@@ -1,11 +1,11 @@
 name: CI and Deploy to GitHub Pages
 
-on:
+on:  
   push:
     branches: [main]
   pull_request:
     branches: [main]
-
+ 
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -41,8 +41,10 @@ jobs:
 
       - name: Checkout gh-pages branch
         run: |
-          git fetch --depth=1 origin gh-pages
           git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
 
       - name: Clear out gh-pages branch contents
         run: git rm -rf . || true
@@ -57,7 +59,7 @@ jobs:
             git commit -m "Deploy Playwright report"
           else
             echo "No changes to commit to gh-pages."
-
+            
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
@@ -65,5 +67,5 @@ jobs:
           git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }}/gh-pages
 
       - name: Output Playwright report URL
-        run: |
+        run: | 
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
