@@ -64,6 +64,6 @@ jobs:
           git commit -m "Deploy Playwright report to GitHub Pages" --allow-empty
           
           # Push changes back to the remote gh-pages branch using the token
-          git push --force "https://${{ secrets.ACCESS_TOKEN }}@${{ github.server_url }}/${{ github.repository }}" gh-pages
+          git push --force "https://${{ secrets.ACCESS_TOKEN }}@${{ github.server_url }}/guneyekiz/playwright.git" gh-pages
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
