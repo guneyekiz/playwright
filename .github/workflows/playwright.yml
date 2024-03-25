@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  test-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -49,9 +49,11 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git fetch --depth=1 origin gh-pages
-          git checkout -b gh-pages origin/gh-pages
-          git rm -rf .
-          cp -R playwright-report/* .
+          git add .
+          git stash # Stash any changes, including package-lock.json
+          git checkout gh-pages
+          git rm -rf . # Remove all files currently in the gh-pages branch
+          cp -R playwright-report/* . # Copy report to gh-pages branch
           git add .
           git commit -m "Deploy Playwright report to GitHub Pages"
           git push origin gh-pages
