@@ -3,7 +3,7 @@ name: CI and Deploy to GitHub Pages
 on:  
   push:
     branches: [main]
-  pull_request: 
+  pull_request:
     branches: [main]
 
 jobs:
@@ -35,10 +35,6 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Get Timestamp
-        id: timestamp
-        run: echo "timestamp=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
-
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
@@ -57,17 +53,14 @@ jobs:
       - name: Clear out gh-pages branch contents
         run: git rm -rf . || true
 
-      - name: Create Timestamp Directory
-        run: mkdir -p ${{ env.timestamp }}
-
-      - name: Copy Playwright report to Timestamp Directory
-        run: cp -r playwright-report/* ${{ env.timestamp }}/
+      - name: Copy Playwright report to gh-pages
+        run: cp -r playwright-report/* . || echo "No Playwright report found to copy."
 
       - name: Commit Playwright report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            git commit -m "Deploy Playwright report at ${{ env.timestamp }}"
+            git commit -m "Deploy Playwright report"
           else
             echo "No changes to commit to gh-pages."
           fi
@@ -80,4 +73,4 @@ jobs:
 
       - name: Output Playwright report URL
         run: | 
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.timestamp }}/playwright-report/"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
