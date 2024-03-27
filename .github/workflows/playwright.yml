@@ -35,18 +35,34 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Stash package files to prevent checkout issues
-        run: git stash push -- package-lock.json package.json
+      - name: Get current date
+        id: current-date
+        run: echo "::set-output name=date::$(date +'%Y/%m/%d')"
 
       - name: Checkout gh-pages branch
         uses: actions/checkout@v2
         with:
           ref: gh-pages
-          path: gh-pages 
-          
-      - name: Get current date
-        id: current-date
-        run: echo "::set-output name=date::$(date +'%Y/%m/%d')"
+          path: gh-pages
+          fetch-depth: 0  # Fetch all history for .GitInfo and .Lastmod
+        continue-on-error: true
+
+      - name: Create gh-pages branch if it doesn't exist
+        if: steps.checkout.outcome == 'failure'
+        run: |
+          cd gh-pages
+          git checkout --orphan gh-pages
+          git rm -rf .
+          echo "Repository created on $(date)" > index.html
+          git add index.html
+          git commit -m "Initial gh-pages branch"
+          git push origin gh-pages
+
+      - name: Configure Git
+        run: |
+          cd gh-pages
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
       - name: Create new report directory
         run: mkdir -p gh-pages/${{ steps.current-date.outputs.date }}/playwright-report
@@ -54,19 +70,13 @@ jobs:
       - name: Copy Playwright report to new directory
         run: cp -r playwright-report/* gh-pages/${{ steps.current-date.outputs.date }}/playwright-report/
 
-      - name: Configure Git for gh-pages
-        run: |
-          cd gh-pages
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Commit Playwright report to gh-pages
+      - name: Commit and Push Playwright report to gh-pages
         run: |
           cd gh-pages
           git add .
           git commit -m "Deploy Playwright report for ${{ steps.current-date.outputs.date }}"
-          git push origin gh-pages
+          git push -fu origin gh-pages
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ steps.current-date.outputs.date }}/playwright-report/"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ steps.current-date.outputs.date }}/playwright-report/"
