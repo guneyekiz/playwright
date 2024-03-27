@@ -35,9 +35,6 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Get current date
-        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
@@ -46,26 +43,38 @@ jobs:
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
 
+      - name: Get current date for folder naming
+        run: echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
       - name: Checkout gh-pages branch
         run: |
-          git fetch
           git checkout gh-pages || git checkout --orphan gh-pages
-          git reset --hard origin/gh-pages || true
+          git reset --soft origin/gh-pages || true
 
-      - name: Clear out gh-pages branch contents
+      - name: Clear out gh-pages branch contents if needed
         run: git rm -rf . || true
 
-      - name: Create dated report directory and copy report
-        run: |
-          mkdir -p "playwright-report/${{ env.CURRENT_DATE }}"
-          cp -r playwright-report/* "playwright-report/${{ env.CURRENT_DATE }}/"
-          git add playwright-report/${{ env.CURRENT_DATE }}
+      - name: Create dated folder for report
+        run: mkdir -p ${{ env.DATE }}
+
+      - name: Copy Playwright report to dated folder
+        run: cp -r playwright-report/* ${{ env.DATE }}/
 
       - name: Commit Playwright report to gh-pages
         run: |
-          git commit -m "Deploy Playwright report for ${{ env.CURRENT_DATE }}"
-          git push --force-with-lease origin gh-pages
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit to gh-pages."
+          else
+            git commit -m "Deploy Playwright report for ${{ env.DATE }}"
+            git push -fu https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
+          fi
+
+      - name: Push changes using PAT
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Playwright report URL
         run: |
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/${{ env.CURRENT_DATE }}/"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.DATE }}/playwright-report/"
