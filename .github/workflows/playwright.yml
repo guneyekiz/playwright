@@ -35,6 +35,9 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
+      - name: Get current date
+        id: current_date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Configure Git
         run: |
@@ -54,17 +57,16 @@ jobs:
       - name: Clear out gh-pages branch contents
         run: git rm -rf . || true
 
-      - name: Copy Playwright report to gh-pages
-        run: cp -r playwright-report/* . || echo "No Playwright report found to copy."
+      - name: Copy Playwright report to dated folder in gh-pages
+        run: |
+          mkdir -p playwright-report/${{ env.CURRENT_DATE }}
+          cp -r playwright-report/* playwright-report/${{ env.CURRENT_DATE }}/
 
       - name: Commit Playwright report to gh-pages
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add -A
-            git commit -m "Deploy Playwright report"
-          else
-            echo "No changes to commit to gh-pages."
-          fi
+          git add -A
+          git commit -m "Deploy Playwright report for ${{ env.CURRENT_DATE }}"
+          git push -fu https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
 
       - name: Push changes using PAT
         env:
@@ -72,7 +74,6 @@ jobs:
         run: |
           git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
-
       - name: Output Playwright report URL
         run: | 
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/${{ env.CURRENT_DATE }}/"
