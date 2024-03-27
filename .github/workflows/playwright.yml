@@ -57,16 +57,20 @@ jobs:
       - name: Clear out gh-pages branch contents
         run: git rm -rf . || true
 
-      - name: Copy Playwright report to dated folder in gh-pages
-        run: |
-          mkdir -p playwright-report/${{ env.CURRENT_DATE }}
-          cp -r playwright-report/* playwright-report/${{ env.CURRENT_DATE }}/
+      - name: Create dated Playwright report directory
+        run: mkdir -p ${{ env.CURRENT_DATE }}
+
+      - name: Copy Playwright report to dated directory
+        run: cp -r playwright-report/* ${{ env.CURRENT_DATE }}/
+
+      - name: Move dated directory to gh-pages
+        run: mv ${{ env.CURRENT_DATE }} playwright-report/
 
       - name: Commit Playwright report to gh-pages
         run: |
           git add -A
           git commit -m "Deploy Playwright report for ${{ env.CURRENT_DATE }}"
-          git push -fu https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
+          git push
 
       - name: Push changes using PAT
         env:
