@@ -1,6 +1,6 @@
 name: CI and Deploy to GitHub Pages
 
-on:  
+on:
   push:
     branches: [main]
   pull_request:
@@ -10,8 +10,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-     contents: write
-     deployments: write
+      contents: write
+      deployments: write
 
     steps:
       - name: Checkout code
@@ -48,26 +48,24 @@ jobs:
 
       - name: Checkout gh-pages branch
         run: |
+          git fetch
           git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" != "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
+          git reset --hard origin/gh-pages || true
 
       - name: Clear out gh-pages branch contents
         run: git rm -rf . || true
 
       - name: Create dated report directory and copy report
         run: |
-          mkdir "../${{ env.CURRENT_DATE }}"
-          cp -r playwright-report/* "../${{ env.CURRENT_DATE }}/"
-          mv "../${{ env.CURRENT_DATE }}" .
+          mkdir -p "playwright-report/${{ env.CURRENT_DATE }}"
+          cp -r playwright-report/* "playwright-report/${{ env.CURRENT_DATE }}/"
+          git add playwright-report/${{ env.CURRENT_DATE }}
 
       - name: Commit Playwright report to gh-pages
         run: |
-          git add -A
           git commit -m "Deploy Playwright report for ${{ env.CURRENT_DATE }}"
-          git push --force-with-lease -u origin gh-pages
+          git push --force-with-lease origin gh-pages
 
       - name: Output Playwright report URL
-        run: | 
+        run: |
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/${{ env.CURRENT_DATE }}/"
