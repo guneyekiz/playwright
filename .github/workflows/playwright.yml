@@ -36,7 +36,6 @@ jobs:
         continue-on-error: true
 
       - name: Get current date
-        id: current_date
         run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Configure Git
@@ -57,17 +56,17 @@ jobs:
       - name: Clear out gh-pages branch contents
         run: git rm -rf . || true
 
-      - name: Create and copy Playwright report to dated directory
+      - name: Create dated report directory and copy report
         run: |
-          mkdir -p playwright-report/${{ env.CURRENT_DATE }}
-          cp -r * playwright-report/${{ env.CURRENT_DATE }}/
-          mv playwright-report/${{ env.CURRENT_DATE }} .
+          mkdir "../${{ env.CURRENT_DATE }}"
+          cp -r playwright-report/* "../${{ env.CURRENT_DATE }}/"
+          mv "../${{ env.CURRENT_DATE }}" .
 
       - name: Commit Playwright report to gh-pages
         run: |
           git add -A
           git commit -m "Deploy Playwright report for ${{ env.CURRENT_DATE }}"
-          git push --force-with-lease -u https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
+          git push --force-with-lease -u origin gh-pages
 
       - name: Output Playwright report URL
         run: | 
