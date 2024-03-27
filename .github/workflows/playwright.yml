@@ -35,10 +35,6 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Get Date for Folder Structure
-        id: date
-        run: echo "::set-output name=date::$(date +%Y/%m/%d)"
-
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
@@ -48,23 +44,28 @@ jobs:
         run: git stash push -- package-lock.json package.json
 
       - name: Checkout gh-pages branch
-        run: |
-          git checkout gh-pages || git checkout --orphan gh-pages
-          git fetch --depth=1
-          git reset --soft origin/gh-pages || true
+        uses: actions/checkout@v2
+        with:
+          ref: 'gh-pages'
+          path: 'gh-pages'
+          
+      - name: Get current date
+        id: current-date
+        run: echo "::set-output name=date::$(date +'%Y/%m/%d')"
 
-      - name: Create Directory Structure
-        run: mkdir -p ${{ steps.date.outputs.date }}/playwright-report
+      - name: Create new report directory
+        run: mkdir -p gh-pages/${{ steps.current-date.outputs.date }}/playwright-report
 
-      - name: Copy Playwright report to Directory
-        run: cp -r playwright-report/* ${{ steps.date.outputs.date }}/playwright-report/
+      - name: Copy Playwright report to new directory
+        run: cp -r playwright-report/* gh-pages/${{ steps.current-date.outputs.date }}/playwright-report/
 
       - name: Commit Playwright report to gh-pages
         run: |
+          cd gh-pages
           git add .
-          git commit -m "Deploy Playwright report for ${{ steps.date.outputs.date }}"
-          git push -fu https://${{ secrets.ACCESS_TOKEN }}@github.com/${{ github.repository }} gh-pages
+          git commit -m "Deploy Playwright report for ${{ steps.current-date.outputs.date }}"
+          git push -fu origin gh-pages
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ steps.date.outputs.date }}/playwright-report/"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ steps.current-date.outputs.date }}/playwright-report/"
