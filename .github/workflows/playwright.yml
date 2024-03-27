@@ -50,33 +50,24 @@ jobs:
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+          if [ "$(git rev-parse --abbrev-ref HEAD)" != "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
 
       - name: Clear out gh-pages branch contents
         run: git rm -rf . || true
 
-      - name: Create dated Playwright report directory
-        run: mkdir -p ${{ env.CURRENT_DATE }}
-
-      - name: Copy Playwright report to dated directory
-        run: cp -r playwright-report/* ${{ env.CURRENT_DATE }}/
-
-      - name: Move dated directory to gh-pages
-        run: mv ${{ env.CURRENT_DATE }} playwright-report/
+      - name: Create and copy Playwright report to dated directory
+        run: |
+          mkdir -p playwright-report/${{ env.CURRENT_DATE }}
+          cp -r * playwright-report/${{ env.CURRENT_DATE }}/
+          mv playwright-report/${{ env.CURRENT_DATE }} .
 
       - name: Commit Playwright report to gh-pages
         run: |
           git add -A
           git commit -m "Deploy Playwright report for ${{ env.CURRENT_DATE }}"
-          git push
-
-      - name: Push changes using PAT
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-        run: |
-          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+          git push --force-with-lease -u https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Playwright report URL
         run: | 
