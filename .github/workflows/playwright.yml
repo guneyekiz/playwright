@@ -43,38 +43,34 @@ jobs:
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
 
-      - name: Get current date for folder naming
-        run: echo "DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
-          git reset --soft origin/gh-pages || true
 
-      - name: Clear out gh-pages branch contents if needed
-        run: git rm -rf . || true
+      - name: Get current date for folder naming
+        id: current_date
+        run: echo "CURRENT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Create dated folder for report
-        run: mkdir -p ${{ env.DATE }}
+      - name: Create report folder with the current date
+        run: mkdir -p ${{ env.CURRENT_DATE }}
 
-      - name: Copy Playwright report to dated folder
-        run: cp -r playwright-report/* ${{ env.DATE }}/
+      - name: Copy Playwright report to the dated folder
+        run: cp -r playwright-report/* ${{ env.CURRENT_DATE }}/
 
-      - name: Commit Playwright report to gh-pages
+      - name: Generate index.html with links to reports
+        run: |
+          echo "<html><body><ul>" > index.html
+          for dir in $(ls -d */ | grep '^\d\d\d\d-\d\d-\d\d$'); do
+            echo "<li><a href='./$dir/index.html'>$dir Report</a></li>" >> index.html
+          done
+          echo "</ul></body></html>" >> index.html
+
+      - name: Commit the changes
         run: |
           git add .
-          if git diff --staged --quiet; then
-            echo "No changes to commit to gh-pages."
-          else
-            git commit -m "Deploy Playwright report for ${{ env.DATE }}"
-            git push -fu https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
-          fi
-
-      - name: Push changes using PAT
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+          git commit -m "Deploy Playwright report for ${{ env.CURRENT_DATE }}" || echo "No changes to commit."
+          git push -fu https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Playwright report URL
-        run: |
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.DATE }}/playwright-report/"
+        run: | 
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.CURRENT_DATE }}/index.html"
