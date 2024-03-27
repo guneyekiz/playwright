@@ -1,6 +1,6 @@
 name: CI and Deploy to GitHub Pages
 
-on:
+on:  
   push:
     branches: [main]
   pull_request:
@@ -35,51 +35,44 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Get current date
-        id: current-date
-        run: echo "::set-output name=date::$(date +'%Y/%m/%d')"
-
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v2
-        with:
-          ref: 'gh-pages'
-          path: 'gh-pages'
-          fetch-depth: 0
-        continue-on-error: true
-
-      - name: Create gh-pages branch if it doesn't exist
-        if: steps.checkout.outcome == 'failure'
-        run: |
-          cd gh-pages
-          git checkout --orphan gh-pages
-          git rm -rf .
-          touch .nojekyll  # Prevents GitHub Pages from using Jekyll
-          git add .nojekyll
-          git commit -m "Initial gh-pages branch commit"
-          git push origin gh-pages
 
       - name: Configure Git
         run: |
-          cd gh-pages
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Create timestamped report directory
-        run: |
-          mkdir -p "${{ steps.current-date.outputs.date }}/playwright-report"
-          echo "Report directory created."
+      - name: Stash package files to prevent checkout issues
+        run: git stash push -- package-lock.json package.json
 
-      - name: Copy Playwright report to timestamped directory
+      - name: Checkout gh-pages branch
         run: |
-          cp -r ../playwright-report/* "${{ steps.current-date.outputs.date }}/playwright-report/"
-          echo "Report copied to directory."
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
 
-      - name: Commit and Push Playwright report to gh-pages
+      - name: Clear out gh-pages branch contents
+        run: git rm -rf . || true
+
+      - name: Copy Playwright report to gh-pages
+        run: cp -r playwright-report/* . || echo "No Playwright report found to copy."
+
+      - name: Commit Playwright report to gh-pages
         run: |
-          git add .
-          git commit -m "Deploy Playwright report for ${{ steps.current-date.outputs.date }}"
-          git push origin gh-pages
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy Playwright report"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+
 
       - name: Output Playwright report URL
-        run: |
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ steps.current-date.outputs.date }}/playwright-report/"
+        run: | 
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
