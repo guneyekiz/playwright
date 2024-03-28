@@ -40,57 +40,77 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
-  publish_report: 
+  publish_report:
     needs: test
     if: "success() || needs.test.result == 'failure'"
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - name: Checkout GitHub Pages Branch
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Check if gh-pages branch exists
+        id: check_branch
+        run: |
+          if git branch -r | grep "origin/gh-pages"; then
+            echo "::set-output name=exists::true"
+          else
+            echo "::set-output name=exists::false"
+          fi
+
+      - name: Create gh-pages branch if not exists
+        if: steps.check_branch.outputs.exists == 'false'
+        run: |
+          git checkout --orphan gh-pages
+          git reset --hard
+          git commit --allow-empty -m "Initial gh-pages commit"
+          git push origin gh-pages
+
+      - name: Checkout gh-pages branch
         uses: actions/checkout@v2
         with:
           ref: gh-pages
           token: ${{ secrets.ACCESS_TOKEN }}
 
-      - name: Set Git User
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Clear existing files
+        run: git rm -rf . && mkdir reports && touch .gitkeep
 
-      - name: Get the current date and time
-        run: echo "NOW=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+      - name: Commit cleared state
+        run: |
+          git add . && git commit -m "Clear gh-pages branch" || echo "No changes to commit"
+
+      - name: Push cleared state
+        run: git push origin gh-pages
 
       - name: Download zipped HTML report
         uses: actions/download-artifact@v2
         with:
           name: playwright-report
-          # This will download to a directory 'playwright-report' in the root
-          path: ./
+          path: .
 
-      - name: Verify and move the report
+      - name: Get the current date and time
+        id: date
+        run: echo "NOW=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+
+      - name: Move reports to gh-pages branch
         run: |
-          if [ -d "playwright-report" ]; then
-            echo "playwright-report directory exists."
-            ls -la playwright-report
-            mkdir -p reports/${{ env.NOW }}
-            mv playwright-report/* reports/${{ env.NOW }}/
-            ls -la reports/${{ env.NOW }}
-          else
-            echo "playwright-report directory does not exist."
-            exit 1
-          fi
+          mkdir -p reports/${{ steps.date.outputs.NOW }}
+          mv playwright-report/* reports/${{ steps.date.outputs.NOW }}/
+          git add reports/${{ steps.date.outputs.NOW }}
 
       - name: Update index.html to redirect to the latest report
         run: |
-          echo '<meta http-equiv="refresh" content="0; URL=reports/${{ env.NOW }}/index.html" />' > index.html
+          echo '<meta http-equiv="refresh" content="0; URL=reports/${{ steps.date.outputs.NOW }}/index.html" />' > index.html
+          git add index.html
 
-      - name: Commit and Push the changes
+      - name: Commit and push reports
         run: |
-          git add .
-          git commit -m "Deploy updated Playwright report and index redirector for ${{ env.NOW }}"
-          git push --set-upstream origin gh-pages
-        env:
-          GIT_COMMITTER_NAME: github-actions[bot]
-          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-          GIT_AUTHOR_NAME: github-actions[bot]
-          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "Update reports"
+          git push origin gh-pages
