@@ -46,15 +46,16 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - name: Setup Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          token: ${{ secrets.ACCESS_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Check if gh-pages branch exists
         id: check_branch
@@ -72,6 +73,7 @@ jobs:
           git reset --hard
           git commit --allow-empty -m "Initial gh-pages commit"
           git push origin gh-pages
+          git checkout main
 
       - name: Checkout gh-pages branch
         uses: actions/checkout@v2
@@ -79,15 +81,14 @@ jobs:
           ref: gh-pages
           token: ${{ secrets.ACCESS_TOKEN }}
 
-      - name: Clear existing files
-        run: git rm -rf . && mkdir reports && touch .gitkeep
-
-      - name: Commit cleared state
+      - name: Clear existing files (except for reports folder)
         run: |
-          git add . && git commit -m "Clear gh-pages branch" || echo "No changes to commit"
-
-      - name: Push cleared state
-        run: git push origin gh-pages
+          git rm -rf .
+          mkdir -p reports
+          touch reports/.gitkeep
+          git add reports/.gitkeep
+          git commit -m "Cleanup gh-pages" || echo "No changes to commit"
+          git push
 
       - name: Download zipped HTML report
         uses: actions/download-artifact@v2
@@ -96,21 +97,17 @@ jobs:
           path: .
 
       - name: Get the current date and time
-        id: date
         run: echo "NOW=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
 
       - name: Move reports to gh-pages branch
         run: |
-          mkdir -p reports/${{ steps.date.outputs.NOW }}
-          mv playwright-report/* reports/${{ steps.date.outputs.NOW }}/
-          git add reports/${{ steps.date.outputs.NOW }}
+          mkdir -p reports/${{ env.NOW }}
+          mv playwright-report/* reports/${{ env.NOW }}/
+          git add reports/${{ env.NOW }}
 
       - name: Update index.html to redirect to the latest report
         run: |
-          echo '<meta http-equiv="refresh" content="0; URL=reports/${{ steps.date.outputs.NOW }}/index.html" />' > index.html
+          echo '<meta http-equiv="refresh" content="0; URL=reports/${{ env.NOW }}/index.html" />' > index.html
           git add index.html
-
-      - name: Commit and push reports
-        run: |
-          git commit -m "Update reports"
-          git push origin gh-pages
+          git commit -m "Deploy updated Playwright report and index redirector for ${{ env.NOW }}"
+          git push
