@@ -61,32 +61,23 @@ jobs:
         id: date
         run: echo "NOW=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
 
-      - name: Show current directory and contents before creating new report directory
-        run: |
-          pwd
-          ls -la
-
-      - name: Create new report directory
-        run: mkdir -p reports/${{ env.NOW }}
-      
-      - name: Show directory contents after creating report directory
-        run: |
-          ls -la reports/
-
       - name: Download zipped HTML report
         uses: actions/download-artifact@v2
         with:
           name: playwright-report
           path: reports/${{ env.NOW }}
 
-      - name: Show contents of the report directory after downloading the artifact
-        run: |
-          ls -la reports/${{ env.NOW }}
+      - name: Move the report to the new directory
+        run: mkdir -p reports/${{ env.NOW }} && mv playwright-report/* reports/${{ env.NOW }}/
 
-      - name: Commit and Push the report to gh-pages
+      - name: Update index.html to redirect to the latest report
+        run: |
+          echo '<meta http-equiv="refresh" content="0; URL=reports/${{ env.NOW }}/index.html" />' > index.html
+
+      - name: Commit and Push the changes
         run: |
           git add .
-          git commit -m "Publish Playwright report for run ${{ github.run_id }} dated ${{ env.NOW }}"
+          git commit -m "Deploy updated Playwright report and index redirector"
           git push --set-upstream origin gh-pages
         env:
           GIT_COMMITTER_NAME: github-actions[bot]
