@@ -1,4 +1,4 @@
-name: CI and Deploy to GitHub Pages
+name: CI and Deploy to GitHub Pagesc
 
 on:
   push:
