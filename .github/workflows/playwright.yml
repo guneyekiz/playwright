@@ -64,14 +64,21 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: playwright-report
-          # Directly download to the `reports` directory
-          path: reports/
+          # This will download to a directory 'playwright-report' in the root
+          path: ./
 
-      - name: Validate downloaded files and directory structure
+      - name: Verify and move the report
         run: |
-          mkdir -p reports/${{ env.NOW }}
-          mv reports/playwright-report/* reports/${{ env.NOW }}/
-          ls -la reports/${{ env.NOW }}
+          if [ -d "playwright-report" ]; then
+            echo "playwright-report directory exists."
+            ls -la playwright-report
+            mkdir -p reports/${{ env.NOW }}
+            mv playwright-report/* reports/${{ env.NOW }}/
+            ls -la reports/${{ env.NOW }}
+          else
+            echo "playwright-report directory does not exist."
+            exit 1
+          fi
 
       - name: Update index.html to redirect to the latest report
         run: |
