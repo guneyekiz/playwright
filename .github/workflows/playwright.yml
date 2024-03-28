@@ -40,33 +40,31 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
-  publish_report:
-    needs: test
-    if: "success() || needs.test.result == 'failure'"
+  prepare_gh_pages:
     runs-on: ubuntu-latest
-    continue-on-error: true
+    needs: test
     steps:
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
           token: ${{ secrets.ACCESS_TOKEN }}
 
-      - name: Setup Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
       - name: Check if gh-pages branch exists
         id: check_branch
         run: |
-          if git branch -r | grep "origin/gh-pages"; then
+          if git ls-remote --heads origin gh-pages; then
             echo "::set-output name=exists::true"
           else
             echo "::set-output name=exists::false"
           fi
 
-      - name: Create gh-pages branch if not exists
+      - name: Create gh-pages branch if it doesn't exist
         if: steps.check_branch.outputs.exists == 'false'
         run: |
           git checkout --orphan gh-pages
@@ -76,19 +74,26 @@ jobs:
           git checkout main
 
       - name: Checkout gh-pages branch
-        uses: actions/checkout@v2
-        with:
-          ref: gh-pages
-          token: ${{ secrets.ACCESS_TOKEN }}
+        run: git checkout gh-pages
 
-      - name: Clear existing files (except for reports folder)
+      - name: Remove existing files
         run: |
-          git rm -rf .
+          git rm -rf . || echo "No files to remove."
           mkdir -p reports
           touch reports/.gitkeep
           git add reports/.gitkeep
           git commit -m "Cleanup gh-pages" || echo "No changes to commit"
-          git push
+          git push origin gh-pages
+
+  publish_report:
+    needs: prepare_gh_pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v2
+        with:
+          ref: gh-pages
+          token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Download zipped HTML report
         uses: actions/download-artifact@v2
@@ -109,5 +114,5 @@ jobs:
         run: |
           echo '<meta http-equiv="refresh" content="0; URL=reports/${{ env.NOW }}/index.html" />' > index.html
           git add index.html
-          git commit -m "Deploy updated Playwright report and index redirector for ${{ env.NOW }}"
-          git push
+          git commit -m "Deploy updated Playwright report for ${{ env.NOW }}"
+          git push origin gh-pages
