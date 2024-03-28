@@ -42,7 +42,7 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
-  publish_report:
+  publish_report: 
     needs: test
     if: "success() || needs.test.result == 'failure'"
     runs-on: ubuntu-latest
