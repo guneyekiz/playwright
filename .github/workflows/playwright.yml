@@ -40,53 +40,8 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
-  prepare_gh_pages:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Setup Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.ACCESS_TOKEN }}
-
-      - name: Check if gh-pages branch exists
-        id: check_branch
-        run: |
-          if git ls-remote --heads origin gh-pages; then
-            echo "::set-output name=exists::true"
-          else
-            echo "::set-output name=exists::false"
-          fi
-
-      - name: Create gh-pages branch if it doesn't exist
-        if: steps.check_branch.outputs.exists == 'false'
-        run: |
-          git checkout --orphan gh-pages
-          git reset --hard
-          git commit --allow-empty -m "Initial gh-pages commit"
-          git push origin gh-pages
-          git checkout main
-
-      - name: Checkout gh-pages branch
-        run: git checkout gh-pages
-
-      - name: Remove existing files
-        run: |
-          git rm -rf . || echo "No files to remove."
-          mkdir -p reports
-          touch reports/.gitkeep
-          git add reports/.gitkeep
-          git commit -m "Cleanup gh-pages" || echo "No changes to commit"
-          git push origin gh-pages
-
   publish_report:
-    needs: prepare_gh_pages
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout gh-pages branch
@@ -95,24 +50,46 @@ jobs:
           ref: gh-pages
           token: ${{ secrets.ACCESS_TOKEN }}
 
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Download zipped HTML report
         uses: actions/download-artifact@v2
         with:
           name: playwright-report
           path: .
 
-      - name: Get the current date and time
-        run: echo "NOW=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+      - name: List contents after artifact download
+        run: ls -la
 
-      - name: Move reports to gh-pages branch
+      - name: Check if playwright-report directory exists
         run: |
-          mkdir -p reports/${{ env.NOW }}
-          mv playwright-report/* reports/${{ env.NOW }}/
-          git add reports/${{ env.NOW }}
+          if [ -d "playwright-report" ]; then
+            echo "playwright-report directory exists, proceeding with moving files."
+            ls -la playwright-report
+          else
+            echo "playwright-report directory does NOT exist, please check artifact upload path and download path."
+            exit 1
+          fi
+
+      - name: Get the current date and time for report directory
+        id: current_date
+        run: echo "REPORT_DIR=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+
+      - name: Create report directory and move reports
+        run: |
+          mkdir -p reports/${REPORT_DIR}
+          mv playwright-report/* reports/${REPORT_DIR}/
+          ls -la reports/${REPORT_DIR}
 
       - name: Update index.html to redirect to the latest report
         run: |
-          echo '<meta http-equiv="refresh" content="0; URL=reports/${{ env.NOW }}/index.html" />' > index.html
-          git add index.html
-          git commit -m "Deploy updated Playwright report for ${{ env.NOW }}"
+          echo '<meta http-equiv="refresh" content="0; URL=reports/${REPORT_DIR}/index.html" />' > index.html
+
+      - name: Commit and push changes
+        run: |
+          git add .
+          git commit -m "Update reports to ${REPORT_DIR}"
           git push origin gh-pages
