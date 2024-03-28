@@ -1,4 +1,4 @@
-name: CI and Deploy to GitHub Pagesc
+name: CI and Deploy to GitHub Pages
 
 on:
   push:
@@ -61,7 +61,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: playwright-report
-          path: reports/${{ github.ref_name }}/${{ github.run_id }}/${{ github.run_attempt }}
+          path: .  # Change this to place the report in the root of the gh-pages branch
 
       - name: Push HTML Report
         run: |
