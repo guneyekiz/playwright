@@ -1,17 +1,17 @@
 name: CI and Deploy to GitHub Pages
 
-on:
+on:  
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write
+     contents: write
+     deployments: write
 
     steps:
       - name: Checkout code
@@ -34,52 +34,43 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test --reporter=html
 
-      - name: Upload HTML report as an artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: playwright-report
-          path: playwright-report/
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
+      - name: Stash package files to prevent checkout issues
+        run: git stash push -- package-lock.json package.json
 
-    steps:
       - name: Checkout gh-pages branch
-        uses: actions/checkout@v2
-        with:
-          ref: gh-pages
-          token: ${{ secrets.ACCESS_TOKEN }} # Use a PAT with repo scope
-
-      - name: Setup Git
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Download zipped HTML report
-        uses: actions/download-artifact@v2
-        with:
-          name: playwright-report
-          path: temp
-
-      - name: Prepare directories and move reports
-        run: |
-          NOW=$(date +'%Y-%m-%d_%H-%M-%S')
-          mkdir -p reports/$NOW
-          mv temp/playwright-report/* reports/$NOW/
-          # Ensure the directory for this report has its own index.html for archival
-          echo "<meta http-equiv='refresh' content='0; URL=./index.html' />" > reports/$NOW/index.html
-          # Update the root index.html to redirect to the latest report
-          echo "<meta http-equiv='refresh' content='0; URL=reports/$NOW/index.html' />" > index.html
-          git add reports/$NOW/ index.html
-
-      - name: Commit and push changes
-        run: |
-          if git commit -m "Deploy updated reports for $NOW"; then
-            git push origin gh-pages
-          else
-            echo "No changes to commit."
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
           fi
+
+      - name: Clear out gh-pages branch contents
+        run: git rm -rf . || true
+
+      - name: Copy Playwright report to gh-pages
+        run: cp -r playwright-report/* . || echo "No Playwright report found to copy."
+
+      - name: Commit Playwright report to gh-pages
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy Playwright report"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+
+
+      - name: Output Playwright report URL
+        run: | 
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
