@@ -1,6 +1,6 @@
 name: CI and Deploy to GitHub Pages
 
-on:  
+on:
   push:
     branches: [main]
   pull_request:
@@ -10,8 +10,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-     contents: write
-     deployments: write
+      contents: write
+      deployments: write
 
     steps:
       - name: Checkout code
@@ -54,10 +54,6 @@ jobs:
       - name: Copy Playwright report to timestamped directory
         run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
 
-      # Added step to remove the playwright-report directory after its content has been copied
-      - name: Remove the playwright-report directory
-        run: rm -rf playwright-report
-
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
@@ -73,9 +69,15 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove files not part of the current report or timestamped directories
+      - name: Remove all except the latest report and timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec git rm -rf {} + || true
+          mkdir ./temp-dir
+          mv ${{ steps.timestamp.outputs.timestamp }} ./temp-dir/ || true
+          mv index.html ./temp-dir/ || true
+          mv *.zip ./temp-dir/ || true
+          rm -rf *
+          mv ./temp-dir/* ./
+          rmdir ./temp-dir
 
       - name: Copy latest Playwright report to root
         run: |
