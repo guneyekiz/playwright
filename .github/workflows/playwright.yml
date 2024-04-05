@@ -54,9 +54,6 @@ jobs:
       - name: Copy Playwright report to timestamped directory
         run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Copy latest Playwright report to root
-        run: cp -r playwright-report/* .
-
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
@@ -72,8 +69,14 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Clear out gh-pages branch contents for root files
-        run: git rm -rf ./* || true
+      - name: Clear out gh-pages branch contents except for reports
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' -exec git rm -rf {} +
+
+      - name: Copy latest Playwright report to root
+        run: |
+          # Ensure we are only copying the new report files
+          cp -r playwright-report/* .
 
       - name: Commit Playwright report to gh-pages
         run: |
