@@ -1,4 +1,4 @@
-name: CI and Deploy to GitHub Pages 
+name: CI and Deploy to GitHub Pages
 
 on:  
   push:
@@ -35,24 +35,29 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Generate timestamp
-        id: timestamp
-        run: echo "::set-output name=timestamp::$(date +%Y%m%d%H%M%S)"
+      - name: Generate date and run number
+        id: run_info
+        run: |
+          CURRENT_DATE=$(date +%Y/%m/%d)
+          echo "::set-output name=date::$CURRENT_DATE"
+          RUN_NUMBER=$(find . -type d -path "./$CURRENT_DATE/*" | wc -l)
+          ((RUN_NUMBER++))
+          echo "::set-output name=run_number::$RUN_NUMBER"
+          mkdir -p $CURRENT_DATE/$RUN_NUMBER
+          echo "Directory for reports: $CURRENT_DATE/$RUN_NUMBER"
+        shell: bash
 
-      - name: Create timestamped directory for reports
-        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+      - name: Copy Playwright report to the directory for this run
+        run: cp -r playwright-report/* ${{ steps.run_info.outputs.date }}/${{ steps.run_info.outputs.run_number }}
 
-      - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+      - name: Zip the report for this run
+        run: zip -r report-${{ steps.run_info.outputs.date }}-${{ steps.run_info.outputs.run_number }}.zip ${{ steps.run_info.outputs.date }}/${{ steps.run_info.outputs.run_number }}
 
-      - name: Upload Playwright report as artifact
+      - name: Upload the zipped report as an artifact
         uses: actions/upload-artifact@v3
         with:
-          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
-
-      - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+          name: report-${{ steps.run_info.outputs.date }}-${{ steps.run_info.outputs.run_number }}
+          path: report-${{ steps.run_info.outputs.date }}-${{ steps.run_info.outputs.run_number }}.zip
 
       - name: Configure Git
         run: |
@@ -69,29 +74,19 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove all except index.html and timestamped directories
+      - name: Remove all except for the report directories and index.html
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'index.html' ! -name '[0-9]*' -exec rm -rf {} +
 
-      - name: Copy latest Playwright report to root
-        run: |
-          cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No Playwright report found to copy."
+      - name: Copy latest index.html to root
+        run: cp ${{ steps.run_info.outputs.date }}/${{ steps.run_info.outputs.run_number }}/index.html index.html || true
 
-      - name: Commit Playwright report to gh-pages
+      - name: Commit changes
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add -A
-            git commit -m "Deploy Playwright report ${GITHUB_SHA}"
-          else
-            echo "No changes to commit to gh-pages."
-          fi
-
-      - name: Push changes using PAT
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-        run: |
-          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+          git add -A
+          git commit -m "Deploy Playwright report for run ${{ steps.run_info.outputs.run_number }} on ${{ steps.run_info.outputs.date }}"
+          git push -fu https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Playwright report URL
         run: | 
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ steps.run_info.outputs.date }}/${{ steps.run_info.outputs.run_number }}/index.html"
