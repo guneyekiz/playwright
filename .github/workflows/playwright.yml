@@ -69,14 +69,15 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Clear out gh-pages branch contents except for reports
+      - name: Remove files not part of the current report or timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' -exec git rm -rf {} +
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec git rm -rf {} +
 
       - name: Copy latest Playwright report to root
         run: |
-          # Ensure we are only copying the new report files
-          cp -r playwright-report/* .
+          cp -r playwright-report/* . || echo "No Playwright report found to copy."
+          # Remove the playwright-report directory after copying its contents
+          rm -rf playwright-report
 
       - name: Commit Playwright report to gh-pages
         run: |
