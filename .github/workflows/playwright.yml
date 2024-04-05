@@ -35,6 +35,16 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
+      # New step to zip the Playwright report
+      - name: Zip Playwright report
+        run: zip -r playwright-report.zip playwright-report/
+
+      # New step to upload the zipped Playwright report as an artifact
+      - name: Upload Playwright report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report.zip
 
       - name: Configure Git
         run: |
@@ -71,7 +81,6 @@ jobs:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
           git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
-
 
       - name: Output Playwright report URL
         run: | 
