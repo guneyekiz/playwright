@@ -1,6 +1,6 @@
 name: CI and Deploy to GitHub Pages
 
-on:
+on:  
   push:
     branches: [main]
   pull_request:
@@ -38,27 +38,32 @@ jobs:
       - name: Generate date and run number
         run: |
           # Format the date as 'YYYYMMDD'
-          echo "CURRENT_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+          CURRENT_DATE=$(date +%Y%m%d)
+          echo "CURRENT_DATE=$CURRENT_DATE" >> $GITHUB_ENV
+          echo "Formatted date as $CURRENT_DATE"
+          
           # Get the next run number for today, assume directories are named 'YYYYMMDD-run*'
-          RUN_NUMBER=$(find . -type d -name "${{ env.CURRENT_DATE }}-run*" | wc -l | xargs)
+          RUN_NUMBER=$(find . -maxdepth 1 -type d -name "$CURRENT_DATE-run*" | wc -l)
           ((RUN_NUMBER++))
-          # Write the run number with the prefixed date to the environment variable
-          echo "TIMESTAMPED_DIR=${{ env.CURRENT_DATE }}-run${RUN_NUMBER}" >> $GITHUB_ENV
-          mkdir -p ${{ env.TIMESTAMPED_DIR }}
-          echo "Directory for reports: ${{ env.TIMESTAMPED_DIR }}"
+          echo "RUN_NUMBER=$RUN_NUMBER" >> $GITHUB_ENV
+          echo "Run number for today is $RUN_NUMBER"
+          
+          # Create the directory for this run
+          mkdir -p $CURRENT_DATE-run$RUN_NUMBER
+          echo "Directory for reports: $CURRENT_DATE-run$RUN_NUMBER"
         shell: bash
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ env.TIMESTAMPED_DIR }}
+        run: cp -r playwright-report/* $CURRENT_DATE-run$RUN_NUMBER
 
       - name: Zip Playwright report
-        run: zip -r ${{ env.TIMESTAMPED_DIR }}.zip playwright-report/
+        run: zip -r playwright-report.zip $CURRENT_DATE-run$RUN_NUMBER
 
       - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: playwright-report-${{ env.TIMESTAMPED_DIR }}
-          path: ${{ env.TIMESTAMPED_DIR }}.zip
+          name: playwright-report-$CURRENT_DATE-run$RUN_NUMBER
+          path: playwright-report.zip
 
       - name: Configure Git
         run: |
@@ -77,17 +82,18 @@ jobs:
 
       - name: Remove all except index.html and timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'index.html' ! -name '${{ env.CURRENT_DATE }}-run*' -exec rm -rf {} + || true
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'index.html' ! -name '*-run*' -exec rm -rf {} + || true
 
       - name: Copy latest index.html to root
-        run: cp ${{ env.TIMESTAMPED_DIR }}/index.html ./ || true
+        run: |
+          cp $CURRENT_DATE-run$RUN_NUMBER/index.html ./ || true
 
       - name: Commit changes
         run: |
           git add -A
-          git commit -m "Deploy Playwright report for run ${{ env.RUN_NUMBER }} on ${{ env.CURRENT_DATE }}"
+          git commit -m "Deploy Playwright report for run $RUN_NUMBER on $CURRENT_DATE"
           git push
 
       - name: Output Playwright report URL
-        run: |
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.TIMESTAMPED_DIR }}/index.html"
+        run: | 
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/$CURRENT_DATE-run$RUN_NUMBER/index.html"
