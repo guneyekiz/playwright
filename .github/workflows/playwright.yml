@@ -75,7 +75,7 @@ jobs:
 
       - name: Remove files not part of the current report or timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec git rm -rf {} +
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec git rm -rf {} + || true
 
       - name: Copy latest Playwright report to root
         run: |
