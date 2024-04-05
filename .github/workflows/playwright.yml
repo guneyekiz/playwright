@@ -1,6 +1,6 @@
 name: CI and Deploy to GitHub Pages
 
-on:  
+on:
   push:
     branches: [main]
   pull_request:
@@ -36,28 +36,25 @@ jobs:
         continue-on-error: true
 
       - name: Generate date and run number
-        id: run_info
         run: |
-          CURRENT_DATE=$(date +%Y/%m/%d)
-          echo "::set-output name=date::$CURRENT_DATE"
-          RUN_NUMBER=$(find . -type d -path "./$CURRENT_DATE/*" | wc -l)
+          echo "CURRENT_DATE=$(date +%Y/%m/%d)" >> $GITHUB_ENV
+          RUN_NUMBER=$(find . -type d -path "./$(date +%Y/%m/%d)/*" | wc -l)
           ((RUN_NUMBER++))
-          echo "::set-output name=run_number::$RUN_NUMBER"
+          echo "RUN_NUMBER=${RUN_NUMBER}" >> $GITHUB_ENV
           mkdir -p $CURRENT_DATE/$RUN_NUMBER
           echo "Directory for reports: $CURRENT_DATE/$RUN_NUMBER"
-        shell: bash
 
-      - name: Copy Playwright report to the directory for this run
-        run: cp -r playwright-report/* ${{ steps.run_info.outputs.date }}/${{ steps.run_info.outputs.run_number }}
+      - name: Copy Playwright report to timestamped directory
+        run: cp -r playwright-report/* ${{ env.CURRENT_DATE }}/${{ env.RUN_NUMBER }}
 
-      - name: Zip the report for this run
-        run: zip -r report-${{ steps.run_info.outputs.date }}-${{ steps.run_info.outputs.run_number }}.zip ${{ steps.run_info.outputs.date }}/${{ steps.run_info.outputs.run_number }}
+      - name: Zip Playwright report
+        run: zip -r playwright-report.zip playwright-report/
 
-      - name: Upload the zipped report as an artifact
+      - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: report-${{ steps.run_info.outputs.date }}-${{ steps.run_info.outputs.run_number }}
-          path: report-${{ steps.run_info.outputs.date }}-${{ steps.run_info.outputs.run_number }}.zip
+          name: playwright-report-${{ env.CURRENT_DATE }}-${{ env.RUN_NUMBER }}
+          path: playwright-report.zip
 
       - name: Configure Git
         run: |
@@ -74,19 +71,20 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove all except for the report directories and index.html
+      - name: Remove all except index.html and timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'index.html' ! -name '[0-9]*' -exec rm -rf {} +
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'index.html' ! -name '202*' -exec rm -rf {} + || true
 
       - name: Copy latest index.html to root
-        run: cp ${{ steps.run_info.outputs.date }}/${{ steps.run_info.outputs.run_number }}/index.html index.html || true
+        run: |
+          cp ${{ env.CURRENT_DATE }}/${{ env.RUN_NUMBER }}/index.html ./ || true
 
       - name: Commit changes
         run: |
           git add -A
-          git commit -m "Deploy Playwright report for run ${{ steps.run_info.outputs.run_number }} on ${{ steps.run_info.outputs.date }}"
-          git push -fu https://${{ secrets.ACCESS_TOKEN }}@github.com/guneyekiz/playwright gh-pages
+          git commit -m "Deploy Playwright report for run ${{ env.RUN_NUMBER }} on ${{ env.CURRENT_DATE }}"
+          git push
 
       - name: Output Playwright report URL
         run: | 
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ steps.run_info.outputs.date }}/${{ steps.run_info.outputs.run_number }}/index.html"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/${{ env.CURRENT_DATE }}/${{ env.RUN_NUMBER }}/index.html"
