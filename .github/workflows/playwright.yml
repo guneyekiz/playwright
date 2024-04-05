@@ -1,6 +1,6 @@
 name: CI and Deploy to GitHub Pages
 
-on:
+on:  
   push:
     branches: [main]
   pull_request:
@@ -69,15 +69,9 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove all except the latest report and timestamped directories
+      - name: Remove all except index.html and timestamped directories
         run: |
-          mkdir ./temp-dir
-          mv ${{ steps.timestamp.outputs.timestamp }} ./temp-dir/ || true
-          mv index.html ./temp-dir/ || true
-          mv *.zip ./temp-dir/ || true
-          rm -rf *
-          mv ./temp-dir/* ./
-          rmdir ./temp-dir
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
 
       - name: Copy latest Playwright report to root
         run: |
