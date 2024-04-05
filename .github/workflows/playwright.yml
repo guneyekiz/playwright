@@ -10,8 +10,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-     contents: write
-     deployments: write
+      contents: write
+      deployments: write
 
     steps:
       - name: Checkout code
@@ -33,6 +33,12 @@ jobs:
 
       - name: Run Playwright tests
         run: npx playwright test --reporter=html
+
+      - name: Upload Playwright Report as Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: playwright-report
+          path: playwright-report/
 
       - name: Configure Git
         run: |
@@ -69,7 +75,6 @@ jobs:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
           git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
-
 
       - name: Output Playwright report URL
         run: | 
