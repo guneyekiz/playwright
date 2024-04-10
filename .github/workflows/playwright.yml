@@ -1,8 +1,8 @@
-name: CI and Deploy to GitHub Pages 
+name: CI and Deploy to GitHub Pages  
 
 on:  
   push:
-    branches: [main]h
+    branches: [main]
   pull_request:
     branches: [main]
 
