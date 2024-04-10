@@ -1,6 +1,6 @@
-name: CI and Deploy to GitHub Pages  
+name: CI and Deploy to GitHub Pages 
 
-on:   
+on:  
   push:
     branches: [main]
   pull_request:
@@ -35,30 +35,24 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Generate today's date
-        id: today
-        run: echo "::set-output name=date::$(date +%Y-%m-%d)"
-
-      - name: Generate running number for today
-        id: run_number
-        run: |
-          printf -v today_num '%02d' "$(($(ls -d [0-9][0-9]-* 2>/dev/null | wc -l) + 1))"
-          echo "::set-output name=run_number::$today_num"
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +%Y%m%d%H%M%S)"
 
       - name: Create timestamped directory for reports
-        run: mkdir -p ${{ steps.today.outputs.date }}-${{ steps.run_number.outputs.run_number }}
+        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Zip Playwright report
-        run: zip -r ${{ steps.today.outputs.date }}-${{ steps.run_number.outputs.run_number }}/playwright-report.zip playwright-report/
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
       - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: playwright-report-${{ steps.today.outputs.date }}-${{ steps.run_number.outputs.run_number }}
-          path: ${{ steps.today.outputs.date }}-${{ steps.run_number.outputs.run_number }}/playwright-report.zip
+          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.today.outputs.date }}-${{ steps.run_number.outputs.run_number }}
+        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Configure Git
         run: |
@@ -69,16 +63,19 @@ jobs:
         run: git stash push -- package-lock.json package.json
 
       - name: Checkout gh-pages branch
-        uses: actions/checkout@v2
-        with:
-          ref: 'gh-pages'
-          fetch-depth: 0 # Necessary to get complete history
+        run: |
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
 
-      - name: Remove old reports from root
-        run: find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '[0-9][0-9]-*' ! -name 'index.html' ! -name 'README.md' -exec rm -rf {} +
+      - name: Remove all except index.html and timestamped directories
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
 
-      - name: Update root index.html with latest report
-        run: cp ${{ steps.today.outputs.date }}-${{ steps.run_number.outputs.run_number }}/index.html .
+      - name: Copy latest Playwright report to root
+        run: |
+          cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No Playwright report found to copy."
 
       - name: Commit Playwright report to gh-pages
         run: |
@@ -93,8 +90,8 @@ jobs:
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
-          git push -fu origin gh-pages
+          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Playwright report URL
         run: | 
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/${{ steps.today.outputs.date }}-${{ steps.run_number.outputs.run_number }}/"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
