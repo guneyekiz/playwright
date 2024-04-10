@@ -37,7 +37,8 @@ jobs:
 
       - name: Generate timestamp
         id: timestamp
-        run: echo "::set-output name=timestamp::$(date '+%Y/%m/%d time:%H/%M/%S')"
+        run: echo "::set-output name=timestamp::$(date '+%Y/%m/%d') time:$(date '+%H/%M/%S')"
+
 
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
