@@ -37,7 +37,7 @@ jobs:
 
       - name: Generate timestamp
         id: timestamp
-        run: echo "::set-output name=timestamp::$(date +%Y/%m/%d/%H%M%S)"
+        run: echo "::set-output name=timestamp::$(date +%Y%m%d%H%M%S)"
 
 
       - name: Create timestamped directory for reports
