@@ -2,7 +2,7 @@ name: CI and Deploy to GitHub Pages
 
 on:  
   push:
-    branches: [main]
+    branches: [main]h
   pull_request:
     branches: [main]
 
