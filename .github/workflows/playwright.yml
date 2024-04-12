@@ -93,7 +93,7 @@ jobs:
 
       - name: Push changes using PAT
         env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
         run: |
           git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
