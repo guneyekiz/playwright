@@ -1,5 +1,5 @@
 name: CI and Deploy to GitHub Pages  
- 
+
 on:   
   push:
     branches: [main]
@@ -40,29 +40,6 @@ jobs:
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
-      - name: Create timestamped directory for reports
-        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
-
-      - name: Generate Allure report
-        run: npx allure generate --clean --output allure-report
-
-      - name: Zip Allure report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip allure-report/
-
-      - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
-
-      - name: Upload Playwright and Allure reports as artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: reports-${{ steps.timestamp.outputs.timestamp }}
-          path: |
-            ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
-            ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip
-
-      - name: Stash all changes including untracked files
-        run: git stash --include-untracked
-
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
 
@@ -73,17 +50,16 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Apply stashed changes
-        run: git stash pop
+      - name: Generate Allure report
+        run: npx allure generate --clean --output allure-report/${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Copy latest reports to root
-        run: |
-          cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No reports found to copy."
+      - name: Move Playwright report
+        run: mv playwright-report allure-report/${{ steps.timestamp.outputs.timestamp }}/playwright-report
 
       - name: Add and commit reports
         run: |
           git add -A
-          git commit -m "Deploy reports ${GITHUB_SHA}"
+          git commit -m "Update reports ${GITHUB_SHA}"
 
       - name: Push changes using PAT
         env:
@@ -93,5 +69,5 @@ jobs:
 
       - name: Output reports URLs
         run: | 
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/${{ steps.timestamp.outputs.timestamp }}/playwright-report/"
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/${{ steps.timestamp.outputs.timestamp }}/"
