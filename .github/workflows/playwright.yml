@@ -1,4 +1,3 @@
-
 name: CI and Deploy to GitHub Pages  
  
 on:   
@@ -34,19 +33,21 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html
+        run: npx playwright test --reporter=html,allure-playwright
         continue-on-error: true
 
       - name: Generate timestamp
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
-
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+      - name: Generate Allure report
+        run: npx allure generate --clean --output allure-report
+
+      - name: Zip Allure report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip allure-report/
 
       - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
@@ -54,8 +55,11 @@ jobs:
           name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
-      - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+      - name: Upload Allure report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip
 
       - name: Configure Git
         run: |
@@ -65,7 +69,6 @@ jobs:
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
 
-        # Fetch gh-pages branch to ensure it's locally available
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
 
