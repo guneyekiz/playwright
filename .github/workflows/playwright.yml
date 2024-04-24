@@ -37,7 +37,7 @@ jobs:
         continue-on-error: true
 
         
-     - name: Generate Allure report
+      - name: Generate Allure report
         run: npx allure generate --clean --output allure-report
 
       - name: Zip Allure report
