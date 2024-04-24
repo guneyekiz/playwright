@@ -37,17 +37,17 @@ jobs:
         continue-on-error: true
 
         
-      - name: Generate Allure report
+     - name: Generate Allure report
         run: npx allure generate --clean --output allure-report
 
       - name: Zip Allure report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip allure-report/
+        run: zip -r allure-report.zip allure-report/
 
       - name: Upload Allure report as artifact
         uses: actions/upload-artifact@v3
         with:
           name: allure-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip  
+          path: allure-report.zip 
 
       - name: Generate timestamp
         id: timestamp
