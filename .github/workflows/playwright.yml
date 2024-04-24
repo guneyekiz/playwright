@@ -1,5 +1,5 @@
 name: CI and Deploy to GitHub Pages  
- 
+
 on:   
   push:
     branches: [main]
@@ -36,38 +36,13 @@ jobs:
         run: npx playwright test --reporter=html,allure-playwright
         continue-on-error: true
 
-      - name: Generate timestamp
-        id: timestamp
-        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
-
-      - name: Create timestamped directory for reports
-        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
-
       - name: Generate Allure report
         run: npx allure generate --clean --output allure-report
 
-      - name: Zip Allure report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip allure-report/
-
-      - name: Upload Playwright report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
-
-      - name: Upload Allure report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: allure-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip
-
-      - name: Configure Git
+      - name: Commit reports before switching branches
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Stash package files to prevent checkout issues
-        run: git stash push -- package-lock.json package.json
+          git add allure-report/* playwright-report/*
+          git commit -m "Update reports before switching branches"
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
@@ -79,29 +54,20 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove all except index.html and timestamped directories
+      - name: Sync reports to gh-pages
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
+          cp -r allure-report/* .
+          cp -r playwright-report/* .
+          git add .
+          git commit -m "Deploy updated reports to gh-pages"
 
-      - name: Copy latest Playwright report to root
-        run: |
-          cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No Playwright report found to copy."
-
-      - name: Commit Playwright report to gh-pages
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add -A
-            git commit -m "Deploy Playwright report ${GITHUB_SHA}"
-          else
-            echo "No changes to commit to gh-pages."
-          fi
-
-      - name: Push changes using PAT
+      - name: Push changes to gh-pages
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
         run: |
           git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
-      - name: Output Playwright report URL
+      - name: Output report URLs
         run: | 
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/"
