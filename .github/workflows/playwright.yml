@@ -39,6 +39,11 @@ jobs:
       - name: Generate Allure report
         run: npx allure generate --clean --output allure-report
 
+      - name: Set Git user info
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
       - name: Commit reports before switching branches
         run: |
           git add -f allure-report/* playwright-report/*
