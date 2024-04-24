@@ -1,5 +1,5 @@
 name: CI and Deploy to GitHub Pages  
-
+ 
 on:   
   push:
     branches: [main]
@@ -26,18 +26,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright
+        run: npm install playwright
+
       - name: Install browsers
         run: npx playwright install
 
       - name: Run Playwright tests
         run: npx playwright test --reporter=html,allure-playwright
         continue-on-error: true
-
-      - name: Generate Allure report
-        run: npx allure generate --clean --output allure-report
-
-      - name: Zip Allure report
-        run: zip -r allure-report.zip allure-report/
 
       - name: Generate timestamp
         id: timestamp
@@ -49,16 +46,36 @@ jobs:
       - name: Zip Playwright report
         run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
-      - name: Upload Allure and Playwright reports as artifacts
+      - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: reports-${{ steps.timestamp.outputs.timestamp }}
-          path: |
-            ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
-            allure-report.zip
+          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+
+      - name: Generate Allure report
+        run: npx allure generate --clean --output allure-report
+
+      - name: Zip Allure report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip allure-report/
+
+      - name: Upload Allure report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip
+
+      - name: Copy reports to timestamped directory
+        run: |
+          cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+          cp -r allure-report/* ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
       - name: Stash package files to prevent checkout issues
-        run: git stash --all
+        run: git stash push -- package-lock.json package.json
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
@@ -70,18 +87,30 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
+      - name: Remove all except index.html and timestamped directories
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
+
       - name: Copy latest reports to root
         run: |
-          cp -r ${{ steps.timestamp.outputs.timestamp }}/* .
-          unzip allure-report.zip -d allure-report/
+          cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No reports found to copy."
 
-      - name: Commit and push updates
+      - name: Commit reports to gh-pages
         run: |
-          git add -A
-          git commit -m "Deploy reports ${GITHUB_SHA}"
-          git push
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy reports ${GITHUB_SHA}"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
+        run: |
+          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output reports URLs
-        run: |
+        run: | 
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
           echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/"
