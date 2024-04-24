@@ -41,7 +41,7 @@ jobs:
 
       - name: Commit reports before switching branches
         run: |
-          git add allure-report/* playwright-report/*
+          git add -f allure-report/* playwright-report/*
           git commit -m "Update reports before switching branches"
 
       - name: Fetch gh-pages branch
@@ -54,7 +54,7 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Sync reports to gh-pages
+      - name: Copy and commit reports to gh-pages
         run: |
           cp -r allure-report/* .
           cp -r playwright-report/* .
