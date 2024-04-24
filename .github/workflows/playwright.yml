@@ -24,7 +24,7 @@ jobs:
           node-version: '20'
           
       - name: Explicitly install @playwright/test
-        run: npm install @playwright/test@1.43.0
+        run: npm install @playwright/test@1.43.1
         
       - name: Install dependencies
         run: npm ci
