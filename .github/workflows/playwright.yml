@@ -32,6 +32,11 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
+      - name: Checkout gh-pages branch
+        run: |
+          git fetch origin gh-pages:gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+
       - name: Run Playwright tests
         run: npx playwright test --reporter=html,allure-playwright
         continue-on-error: true
@@ -39,33 +44,10 @@ jobs:
       - name: Generate Allure report
         run: npx allure generate --clean --output allure-report
 
-      - name: Set Git user info
+      - name: Add and commit reports
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Stash all changes
-        run: git stash --include-untracked
-
-      - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages:gh-pages || true
-
-      - name: Checkout gh-pages branch
-        run: |
-          git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
-
-      - name: Apply stashed changes
-        run: git stash pop
-
-      - name: Copy and commit reports to gh-pages
-        run: |
-          cp -r allure-report/* .
-          cp -r playwright-report/* .
-          git add .
-          git commit -m "Deploy updated reports to gh-pages"
+          git add allure-report/* playwright-report/*
+          git commit -m "Update reports ${GITHUB_SHA}" || echo "No changes to commit."
 
       - name: Push changes to gh-pages
         env:
