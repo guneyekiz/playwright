@@ -101,10 +101,4 @@ jobs:
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
 
       
-            grep "Success Rate" playwright-report/index.html > extracted-data.txt
-            cat extracted-data.txt
-          else
-            echo "Index HTML file does not exist."
-          fi
-
-          cat extracted-data.txt
+     
