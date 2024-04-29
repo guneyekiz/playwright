@@ -10,6 +10,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [
     ['html'],
+    ['json', { outputFile: 'test-results.json' }] 
     ['allure-playwright']  // Make sure this matches the corrected import
   ],
   use: {
