@@ -37,7 +37,7 @@ jobs:
         continue-on-error: true
 
       - name: List output files
-        run: ls -la  # Lists all files in the current directory to check for results.json
+        run: ls -la  # Lists all files in the current directory to check for results.jsonV
 
       - name: Generate timestamp
         id: timestamp
