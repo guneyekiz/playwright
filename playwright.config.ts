@@ -1,16 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
-// Adjust this import based on the troubleshooting above
-const AllureReporter = require('allure-playwright');
 
 export default defineConfig({
-  testDir: './tests', 
+  testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
     ['html'],
-    ['json', { outputFile: './playwright-report/jsonresult.json' }]  
+    ['json', { outputFile: './playwright-report/results.json' }]
   ],
   use: {
     trace: 'on-first-retry',
