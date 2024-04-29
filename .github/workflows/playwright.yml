@@ -100,26 +100,7 @@ jobs:
         run: | 
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
 
-      - name: List contents of the current directory
-        run: ls -la
-
-      - name: List contents of the playwright-report directory
-        run: ls -la playwright-report/ || echo "playwright-report directory not found."
-
-      - name: Extract Test Results from HTML Report
-        run: |
-          if [ -f "index.html" ]; then
-            cat index.html
-            grep "Success Rate" index.html > extracted-data.txt
-            if [ -f extracted-data.txt ]; then
-              cat extracted-data.txt
-            else
-              echo "No success rate data extracted."
-            fi
-          else
-            echo "Index HTML file does not exist in the expected directory."
-          fi
-
+      
             grep "Success Rate" playwright-report/index.html > extracted-data.txt
             cat extracted-data.txt
           else
