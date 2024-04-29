@@ -1,8 +1,7 @@
-
 name: CI and Deploy to GitHub Pages  
 
 on:   
-  push:
+  push:  
     branches: [main]
   pull_request:
     branches: [main] 
@@ -34,8 +33,11 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html,json  # Specify both reporters
+        run: npx playwright test --reporter=html,json
         continue-on-error: true
+
+      - name: List output files
+        run: ls -la  # Lists all files in the current directory to check for results.json
 
       - name: Generate timestamp
         id: timestamp
@@ -44,14 +46,29 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/ results.json
+      - name: Zip HTML Playwright report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip playwright-report/
 
-      - name: Upload Playwright report as artifact
+      - name: Check and Zip JSON Playwright report
+        run: |
+          if [ -f "results.json" ]; then
+            zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-json-report.zip results.json
+          else
+            echo "No JSON report found."
+          fi
+
+      - name: Upload HTML Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+          name: playwright-html-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip
+
+      - name: Upload JSON Playwright report as artifact (if exists)
+        if: ${{ success() && contains(steps.timestamp.outputs.timestamp, 'json-report.zip') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-json-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-json-report.zip
 
       - name: Copy Playwright report to timestamped directory
         run: cp -r playwright-report/* results.json ${{ steps.timestamp.outputs.timestamp }}
@@ -100,6 +117,3 @@ jobs:
       - name: Output Playwright report URL
         run: | 
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
-
-      
-     
