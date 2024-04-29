@@ -10,7 +10,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [
     ['html'],
-    ['json', { outputFile: './playwright-report/results.json' }]  
+    ['json', { outputFolder: 'playwright-report' }]  
   ],
   use: {
     trace: 'on-first-retry',
