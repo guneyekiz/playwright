@@ -37,14 +37,26 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
+      
+      - name: List files in the working directory
+        run: ls -la
+
+      - name: Display contents of test-results.json
+        run: cat test-results.json || echo "test-results.json not found."
+        continue-on-error: true
+
       - name: Calculate Test Success Rate
-        id: calculate_success
         run: |
-          total=$(jq '.stats.tests' test-results.json)
-          passed=$(jq '.stats.passes' test-results.json)
-          rate=$(echo "$passed/$total*100" | bc -l)
-          echo "Test Success Rate: ${rate}%"
-          echo "::set-output name=success_rate::${rate}"
+          if [ -f "test-results.json" ]; then
+            total=$(jq '.stats.tests' test-results.json)
+            passed=$(jq '.stats.passes' test-results.json)
+            rate=$(echo "$passed/$total*100" | bc -l)
+            echo "Test Success Rate: ${rate}%"
+            echo "::set-output name=success_rate::${rate}"
+          else
+            echo "test-results.json does not exist"
+          fi
+        shell: bash
 
       - name: Print Test Success Rate
         run: |
