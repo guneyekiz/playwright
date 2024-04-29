@@ -1,3 +1,4 @@
+
 name: CI and Deploy to GitHub Pages  
  
 on:   
@@ -33,26 +34,13 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=json > test-results.json
+        run: npx playwright test --reporter=html
         continue-on-error: true
-
-      - name: Calculate Test Success Rate
-        id: calculate_success
-        run: |
-          total=$(jq '.suites[0].total' test-results.json)
-          passed=$(jq '[.suites[0].tests[] | select(.status=="passed")] | length' test-results.json)
-          rate=$(echo "$passed/$total*100" | bc -l)
-          echo "success_rate=${rate}" | sed 's/\./,/'  # Format decimal point to comma if necessary
-          echo "success_rate=${rate}" > success_rate.txt
-          echo "::set-output name=success_rate::$(cat success_rate.txt)"
-
-      - name: Print Test Success Rate
-        run: |
-         echo "Test Success Rate: ${{ steps.calculate_success.outputs.success_rate }}%"
 
       - name: Generate timestamp
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
+
 
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
@@ -77,6 +65,7 @@ jobs:
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
 
+        # Fetch gh-pages branch to ensure it's locally available
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
 
