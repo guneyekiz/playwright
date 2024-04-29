@@ -58,7 +58,7 @@ jobs:
           name: playwright-html-report-${{ steps.timestamp.outputs.timestamp }}
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip
 
-      - name: Upload JSON Playwright report as artifact (if exists)
+      - name: Upload JSON Playwright report as artifact 
         uses: actions/upload-artifact@v3
        
         with:
