@@ -47,6 +47,18 @@ jobs:
 
       - name: Install Allure commandline
         run: npm install -g allure-commandline
+
+      - name: Generate Allure Report
+        uses: simplest-ways/allure-report-action@v1
+        with:
+          results: allure-results
+          report: allure-report
+
+      - name: Upload Allure report as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: allure-report
+          path: allure-report  
   
 
       - name: Generate Allure report
@@ -57,14 +69,8 @@ jobs:
       - name: Zip Playwright report
         run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
-      - name: Zip Allure report
-        run: zip -r allure-report.zip allure-report/
 
-      - name: Upload Allure report as artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: allure-report
-          path: allure-report.zip
+     
 
      
       - name: Upload Playwright report as artifact
