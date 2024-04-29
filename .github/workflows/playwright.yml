@@ -40,6 +40,9 @@ jobs:
       - name: List contents of the playwright-report directory
         run: ls -la playwright-report/
 
+      - name: Display Playwright test run logs
+        run: cat playwright-report/* || echo "No logs found"  
+
 
       - name: Generate timestamp
         id: timestamp
