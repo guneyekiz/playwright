@@ -45,15 +45,26 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
+      - name: Install Allure commandline
+        run: npm install -g allure-commandline
+  
+
       - name: Generate Allure report
-        run: npx allure generate ./allure-results --clean -o ./allure-report
+        run: allure generate allure-results --clean -o allure-report
+
 
 
       - name: Zip Playwright report
         run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
       - name: Zip Allure report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip allure-report/
+        run: zip -r allure-report.zip allure-report/
+
+      - name: Upload Allure report as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: allure-report
+          path: allure-report.zip
 
      
       - name: Upload Playwright report as artifact
@@ -61,12 +72,6 @@ jobs:
         with:
           name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
-
-      - name: Upload Allure report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: allure-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip    
 
       - name: Copy Playwright report to timestamped directory
         run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
