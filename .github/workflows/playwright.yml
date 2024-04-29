@@ -35,7 +35,9 @@ jobs:
 
       - name: Run Playwright tests
         run: npx playwright test --reporter=html,json  # Specify both reporters
-        continue-on-error: true
+
+      - name: List output files
+        run: ls -la  # Lists all files in the current directory to check for results.json
 
       - name: Generate timestamp
         id: timestamp
@@ -47,7 +49,7 @@ jobs:
       - name: Zip HTML Playwright report
         run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip playwright-report/
 
-      - name: Zip JSON Playwright report (if exists)
+      - name: Check and Zip JSON Playwright report
         run: |
           if [ -f "results.json" ]; then
             zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-json-report.zip results.json
