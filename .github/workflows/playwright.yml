@@ -33,7 +33,7 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html
+        run: npx playwright test --reporter=html,json  # Specify both reporters
         continue-on-error: true
 
       - name: Generate timestamp
@@ -44,7 +44,7 @@ jobs:
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/ results.json
 
       - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
@@ -53,7 +53,7 @@ jobs:
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+        run: cp -r playwright-report/* results.json ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Configure Git
         run: |
