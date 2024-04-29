@@ -36,8 +36,9 @@ jobs:
         run: npx playwright test --reporter=html,json
         continue-on-error: true
 
-      - name: List output files
-        run: ls -la  # Lists all files in the current directory to check for results.jsonV
+      - name: List contents of the playwright-report directory
+        run: ls -la playwright-report/
+
 
       - name: Generate timestamp
         id: timestamp
