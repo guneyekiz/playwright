@@ -37,6 +37,19 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
+      - name: Calculate Test Success Rate
+        id: calculate_success
+        run: |
+          total=$(jq '.stats.tests' test-results.json)
+          passed=$(jq '.stats.passes' test-results.json)
+          rate=$(echo "$passed/$total*100" | bc -l)
+          echo "Test Success Rate: ${rate}%"
+          echo "::set-output name=success_rate::${rate}"
+
+      - name: Print Test Success Rate
+        run: |
+         echo "Test Success Rate: ${{ steps.calculate_success.outputs.success_rate }}%"  
+
       - name: Generate timestamp
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
