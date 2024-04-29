@@ -100,10 +100,20 @@ jobs:
         run: | 
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
 
+      - name: List contents of the current directory
+        run: ls -la
+
+      - name: List contents of the playwright-report directory
+        run: ls -la playwright-report/ || echo "playwright-report directory not found."
+
       - name: Extract Test Results from HTML Report
         run: |
-          cat playwright-report/index.html
-          # Example using grep to find a specific line
-          grep "Success Rate" playwright-report/index.html > extracted-data.txt
-          # Print extracted data
+          if [ -f "playwright-report/index.html" ]; then
+            cat playwright-report/index.html
+            grep "Success Rate" playwright-report/index.html > extracted-data.txt
+            cat extracted-data.txt
+          else
+            echo "Index HTML file does not exist."
+          fi
+
           cat extracted-data.txt
