@@ -1,3 +1,4 @@
+
 name: CI and Deploy to GitHub Pages  
 
 on:   
@@ -33,7 +34,7 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html,json
+        run: npx playwright test --reporter=html,json  # Specify both reporters
         continue-on-error: true
 
       - name: Generate timestamp
@@ -44,7 +45,7 @@ jobs:
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/ results.json
 
       - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
@@ -53,7 +54,7 @@ jobs:
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+        run: cp -r playwright-report/* results.json ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Configure Git
         run: |
@@ -100,10 +101,5 @@ jobs:
         run: | 
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
 
-      - name: Extract Test Results from HTML Report
-        run: |
-          cat playwright-report/index.html
-          # Example using grep to find a specific line
-          grep "Success Rate" playwright-report/index.html > extracted-data.txt
-          # Print extracted data
-          cat extracted-data.txt
+      
+     
