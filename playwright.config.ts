@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+const { AllureReporter } = require('allure-playwright');
 
 export default defineConfig({
   testDir: './tests',
@@ -9,7 +10,8 @@ export default defineConfig({
 
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['json', { outputFile: 'playwright-report/results.json' }]
+    ['allure-playwright'], // Add Allure reporter
+   
   ]
   ,
   
