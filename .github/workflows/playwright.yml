@@ -1,5 +1,6 @@
-name: CI and Deploy to GitHub Pages  
 
+name: CI and Deploy to GitHub Pages  
+ 
 on:   
   push:
     branches: [main]
@@ -32,30 +33,72 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
-      - name: Checkout gh-pages branch
-        run: |
-          git fetch origin gh-pages:gh-pages || true
-          git checkout gh-pages || git checkout --orphan gh-pages
-
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html,allure-playwright
+        run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Generate Allure report
-        run: npx allure generate --clean --output allure-report
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
-      - name: Add and commit reports
+
+      - name: Create timestamped directory for reports
+        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Zip Playwright report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+
+      - name: Upload Playwright report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+
+      - name: Copy Playwright report to timestamped directory
+        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Configure Git
         run: |
-          git add allure-report/* playwright-report/*
-          git commit -m "Update reports ${GITHUB_SHA}" || echo "No changes to commit."
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
-      - name: Push changes to gh-pages
+      - name: Stash package files to prevent checkout issues
+        run: git stash push -- package-lock.json package.json
+
+        # Fetch gh-pages branch to ensure it's locally available
+      - name: Fetch gh-pages branch
+        run: git fetch origin gh-pages:gh-pages || true
+
+      - name: Checkout gh-pages branch
+        run: |
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
+
+      - name: Remove all except index.html and timestamped directories
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
+
+      - name: Copy latest Playwright report to root
+        run: |
+          cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No Playwright report found to copy."
+
+      - name: Commit Playwright report to gh-pages
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy Playwright report ${GITHUB_SHA}"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
         run: |
           git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
-      - name: Output report URLs
+      - name: Output Playwright report URL
         run: | 
           echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/"
