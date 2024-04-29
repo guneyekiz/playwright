@@ -54,27 +54,13 @@ jobs:
       - name: Zip HTML Playwright report
         run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip playwright-report/
 
-      - name: Zip JSON Playwright report
-        run: |
-          if [ -f "./playwright-report/results.json" ]; then
-            zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-json-report.zip ./playwright-report/results.json
-            echo "JSON report zipped successfully."
-          else
-            echo "No JSON report found, no zip file will be created."
-          fi
+    
 
       - name: Upload HTML Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
           name: playwright-html-report-${{ steps.timestamp.outputs.timestamp }}
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip
-
-      - name: Upload JSON Playwright report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: playwright-json-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-json-report.zip
-          if-no-files-found: warn  # Won't fail the job if the JSON report is not found
 
 
       - name: Copy Playwright report to timestamped directory
