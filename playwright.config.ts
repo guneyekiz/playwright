@@ -9,7 +9,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ['html'],
+    ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results.json' }],
     ['allure-playwright']  // Make sure this matches the corrected importc
   ],
