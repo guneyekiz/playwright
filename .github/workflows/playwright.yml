@@ -108,8 +108,18 @@ jobs:
 
       - name: Extract Test Results from HTML Report
         run: |
-          if [ -f "playwright-report/index.html" ]; then
-            cat playwright-report/index.html
+          if [ -f "index.html" ]; then
+            cat index.html
+            grep "Success Rate" index.html > extracted-data.txt
+            if [ -f extracted-data.txt ]; then
+              cat extracted-data.txt
+            else
+              echo "No success rate data extracted."
+            fi
+          else
+            echo "Index HTML file does not exist in the expected directory."
+          fi
+
             grep "Success Rate" playwright-report/index.html > extracted-data.txt
             cat extracted-data.txt
           else
