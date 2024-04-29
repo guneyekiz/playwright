@@ -27,7 +27,8 @@ jobs:
         run: npm ci
 
       - name: Install Playwright
-        run: npm install playwright
+        run: npm install playwright@1.43.1
+
 
       - name: Install browsers
         run: npx playwright install
