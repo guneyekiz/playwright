@@ -1,5 +1,5 @@
 name: CI and Deploy to GitHub Pages  
-  
+ 
 on:   
   push:
     branches: [main]
@@ -42,11 +42,13 @@ jobs:
           total=$(jq '.suites[0].total' test-results.json)
           passed=$(jq '[.suites[0].tests[] | select(.status=="passed")] | length' test-results.json)
           rate=$(echo "$passed/$total*100" | bc -l)
-          echo "::set-output name=success_rate::$(printf "%.2f" $rate)"
-        shell: bash
+          echo "success_rate=${rate}" | sed 's/\./,/'  # Format decimal point to comma if necessary
+          echo "success_rate=${rate}" > success_rate.txt
+          echo "::set-output name=success_rate::$(cat success_rate.txt)"
 
       - name: Print Test Success Rate
-        run: echo "Test Success Rate: ${{ steps.calculate_success.outputs.success_rate }}%"
+        run: |
+         echo "Test Success Rate: ${{ steps.calculate_success.outputs.success_rate }}%"
 
       - name: Generate timestamp
         id: timestamp
