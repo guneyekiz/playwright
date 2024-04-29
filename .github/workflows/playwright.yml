@@ -1,7 +1,8 @@
-name: CI and Deploy to GitHub Pages  
 
+name: CI and Deploy to GitHub Pages  
+ 
 on:   
-  push:  
+  push:
     branches: [main]
   pull_request:
     branches: [main] 
@@ -27,56 +28,34 @@ jobs:
         run: npm ci
 
       - name: Install Playwright
-        run: npm install playwright@1.43.1
-
+        run: npm install playwright
 
       - name: Install browsers
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html,json,allure-playwright
+        run: npx playwright test --reporter=html
         continue-on-error: true
-
-      - name: List contents of the playwright-report directory
-        run: ls -la playwright-report/
-
-      - name: Display Playwright test run logs
-        run: cat playwright-report/* || echo "No logs found"  
-
 
       - name: Generate timestamp
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
+
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Generate Allure report
-        run: npx allure generate ./allure-results --clean -o ./allure-report  
+      - name: Zip Playwright report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
-      - name: Zip HTML Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip playwright-report/
-
-      - name: Zip Allure report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip allure-report/
-
-
-      - name: Upload HTML Playwright report as artifact
+      - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: playwright-html-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip
-
-      - name: Upload Allure report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: allure-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip    
-
+          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
       - name: Copy Playwright report to timestamped directory
         run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
-
 
       - name: Configure Git
         run: |
@@ -86,6 +65,7 @@ jobs:
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
 
+        # Fetch gh-pages branch to ensure it's locally available
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
 
