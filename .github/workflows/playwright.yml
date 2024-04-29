@@ -44,14 +44,29 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/ results.json
+      - name: Zip HTML Playwright report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip playwright-report/
 
-      - name: Upload Playwright report as artifact
+      - name: Zip JSON Playwright report (if exists)
+        run: |
+          if [ -f "results.json" ]; then
+            zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-json-report.zip results.json
+          else
+            echo "No JSON report found."
+          fi
+
+      - name: Upload HTML Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+          name: playwright-html-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-html-report.zip
+
+      - name: Upload JSON Playwright report as artifact (if exists)
+        if: ${{ success() && contains(steps.timestamp.outputs.timestamp, 'json-report.zip') }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-json-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-json-report.zip
 
       - name: Copy Playwright report to timestamped directory
         run: cp -r playwright-report/* results.json ${{ steps.timestamp.outputs.timestamp }}
