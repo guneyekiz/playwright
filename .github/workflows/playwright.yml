@@ -34,20 +34,26 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html
+        run: |
+          npx playwright test --reporter=html
+          npx playwright test --reporter=json > playwright-results.json
         continue-on-error: true
 
-     
+      - name: Install jq
+        run: sudo apt-get install jq
 
-      - name: Parse HTML report for results
+      - name: Parse JSON report for results
         run: |
-          passed=$(grep -oP 'class="indicator--passed">Passed \K(\d+)' playwright-report/index.html)
-          failed=$(grep -oP 'class="indicator--failed">Failed \K(\d+)' playwright-report/index.html)
+          passed=$(jq '.stats.passes' playwright-results.json)
+          failed=$(jq '.stats.failures' playwright-results.json)
           echo "passed=$passed, failed=$failed" >> $GITHUB_ENV
 
       - name: Output test results
         run: |
-          echo "Passed Tests: $passed, Failed Tests: $failed"
+          echo "Passed Tests: $passed, Failed Tests: $failed"  
+
+     
+
   
        
        
