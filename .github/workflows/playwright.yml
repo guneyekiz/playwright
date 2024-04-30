@@ -36,7 +36,7 @@ jobs:
       - name: Run Playwright tests and generate JSON and playwright report
         run: |
            npx playwright test --reporter=html --reporter=json --reporter-output=json=playwright-results.json --reporter-output=html=playwright-report
-         continue-on-error: true
+        continue-on-error: true
 
       - name: List files in the directory
         run: ls -la
