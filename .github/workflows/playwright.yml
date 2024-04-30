@@ -37,11 +37,13 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Extract results from HTML report
-        id: test_results
+      - name: Debug - Show index.html content
+        run: cat playwright-report/index.html
+
+      - name: Extract test results
         run: |
-          passed=$(grep 'class="passed"' playwright-report/index.html | wc -l)
-          failed=$(grep 'class="failed"' playwright-report/index.html | wc -l)
+          passed=$(grep 'data-test-result="passed"' playwright-report/index.html | wc -l)
+          failed=$(grep 'data-test-result="failed"' playwright-report/index.html | wc -l)
           echo "PASSED_TESTS=$passed" >> $GITHUB_ENV
           echo "FAILED_TESTS=$failed" >> $GITHUB_ENV
 
@@ -49,7 +51,6 @@ jobs:
         run: |
           echo "Number of passed tests: $PASSED_TESTS"
           echo "Number of failed tests: $FAILED_TESTS"
-
 
    
 
