@@ -35,14 +35,14 @@ jobs:
 
       - name: Run Playwright tests
         run: |
-        npx playwright test --reporter=json > playwright-results.json
-        continue-on-error: true
+         npx playwright test --reporter=json > playwright-results.json
+         continue-on-error: true
 
       - name: Analyze Test Results
         id: test_analysis
         run: |
-        result=$(jq '.stats.failures' playwright-results.json)
-        echo "::set-output name=test_failed::$result"
+         result=$(jq '.stats.failures' playwright-results.json)
+         echo "::set-output name=test_failed::$result"
   
 
 
