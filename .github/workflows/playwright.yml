@@ -73,6 +73,21 @@ jobs:
         run: |
          echo "Skipped Tests: ${{ env.skipped }}"
 
+      - name: Calculate passing percentage rate and take action
+        run: |
+          total_tests=$(( ${{ env.passed }} + ${{ env.failed }} ))
+         if [ $total_tests -eq 0 ]; then
+          echo "No tests were run."
+         else
+          passing_rate=$(( 100 * ${{ env.passed }} / $total_tests ))
+          echo "Passing Rate: $passing_rate%"
+         if [ $passing_rate -gt 80 ]; then
+          echo "Great! The passing rate is above 80%."
+         else
+          echo "Improvement needed. The passing rate is at or below 80%."
+        fi
+       fi   
+
    
       
       - name: Generate timestamp
