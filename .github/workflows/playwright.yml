@@ -51,6 +51,8 @@ jobs:
           echo "export skipped=$skipped" >> $GITHUB_ENV
           echo "export failed=$failed" >> $GITHUB_ENV
           echo "export flaky=$flaky" >> $GITHUB_ENV
+          echo "Flaky Tests: $flaky"
+          echo "Skipped Tests: $skipped" 
           echo "Passed Tests: $passed, Failed Tests: $failed, Flaky Tests: $flaky, Skipped Tests: $skipped"
          else
           echo "playwright-results.json does not exist or is not a file"
