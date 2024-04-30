@@ -35,11 +35,14 @@ jobs:
 
       - name: Run Playwright tests and generate JSON report
         run: |
-          npx playwright test --reporter=json > playwright-results.json || cat playwright-results.json
+          npx playwright test --reporter=json > playwright-results.json
         continue-on-error: true
 
       - name: List files in the directory
         run: ls -la
+
+      - name: Display JSON content
+        run: cat playwright-results.json
 
       - name: Parse JSON report for results
         run: |
