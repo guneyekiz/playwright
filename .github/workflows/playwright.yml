@@ -52,7 +52,8 @@ jobs:
           fi
 
       - name: Output test results
-        run: echo "Passed Tests: $passed, Failed Tests: $failed"  
+        run: |
+          echo "Passed Tests: $passed, Failed Tests: $failed"  
 
      
        
