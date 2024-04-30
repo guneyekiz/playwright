@@ -57,20 +57,17 @@ jobs:
          fi
 
       - name: Output test passed
-        run: |
-         echo "Passed Tests: $passed" ${{ env.passed }}" 
+        run: echo "Passed Tests: ${{ env.passed }}"
 
       - name: Output test failed
-        run: |
-         echo "Failed Tests: $failed" ${{ env.failed }}" 
+        run: echo "Failed Tests: ${{ env.failed }}"
 
       - name: Output test flaky
-        run: |
-         echo "Flaky Tests: $flaky" ${{ env.flaky }}"
+        run: echo "Flaky Tests: ${{ env.flaky }}"
 
-      - name: Output test skipped ${{ env.skipped }}"
-        run: |
-         echo "Skipped Tests: $skipped" 
+      - name: Output test skipped
+        run: echo "Skipped Tests: ${{ env.skipped }}"
+
    
       
       - name: Generate timestamp
