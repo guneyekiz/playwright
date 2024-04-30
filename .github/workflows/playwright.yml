@@ -58,19 +58,19 @@ jobs:
 
       - name: Output test passed
         run: |
-         echo "Passed Tests: $passed" 
+         echo "Passed Tests: $passed" ${{ env.passed }}" 
 
       - name: Output test failed
         run: |
-         echo "Failed Tests: $failed" 
+         echo "Failed Tests: $failed" ${{ env.failed }}" 
 
       - name: Output test flaky
         run: |
-         echo "Flaky Tests: $flaky"
+         echo "Flaky Tests: $flaky" ${{ env.flaky }}"
 
-      - name: Output test skipped
+      - name: Output test skipped ${{ env.skipped }}"
         run: |
-         echo "Skipped Tests: $skipped" >> $GITHUB_ENV 
+         echo "Skipped Tests: $skipped" 
    
       
       - name: Generate timestamp
