@@ -37,20 +37,17 @@ jobs:
         run: npx playwright test --reporter=html
         continue-on-error: true
 
-      - name: Install Pup (HTML parser)
-        run: sudo apt-get install -y pup
-        
+     
 
       - name: Parse HTML report for results
         run: |
-          passed=$(cat playwright-report/index.html | pup 'text{}' | grep -o 'passed' | wc -l)
-          failed=$(cat playwright-report/index.html | pup 'text{}' | grep -o 'failed' | wc -l)
+          passed=$(grep -oP 'class="indicator--passed">Passed \K(\d+)' playwright-report/index.html)
+          failed=$(grep -oP 'class="indicator--failed">Failed \K(\d+)' playwright-report/index.html)
           echo "passed=$passed, failed=$failed" >> $GITHUB_ENV
 
       - name: Output test results
         run: |
           echo "Passed Tests: $passed, Failed Tests: $failed"
-  
   
        
        
