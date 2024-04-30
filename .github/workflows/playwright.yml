@@ -57,16 +57,20 @@ jobs:
          fi
 
       - name: Output test passed
-        run: echo "Passed Tests: $passed" 
+        run: |
+         echo "Passed Tests: $passed" 
 
       - name: Output test failed
-        run: echo "Failed Tests: $failed" 
+        run: |
+         echo "Failed Tests: $failed" 
 
       - name: Output test flaky
-        run: echo "Flaky Tests: $flaky"
+        run: |
+         echo "Flaky Tests: $flaky"
 
       - name: Output test skipped
-        run: echo "Skipped Tests: $skipped" >> $GITHUB_ENV 
+        run: |
+         echo "Skipped Tests: $skipped" >> $GITHUB_ENV 
    
       
       - name: Generate timestamp
