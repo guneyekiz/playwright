@@ -44,16 +44,18 @@ jobs:
         run: |
           if [ -f playwright-results.json ]; then
             passed=$(jq '.stats.expected' playwright-results.json)
+            skipped=$(jq '.stats.skipped' playwright-results.json)
             failed=$(jq '.stats.unexpected' playwright-results.json)
-            echo "passed=$passed, failed=$failed" >> $GITHUB_ENV
-            echo "Passed Tests: $passed, Failed Tests: $failed"
+            flaky=$(jq '.stats.flaky' playwright-results.json)
+            echo "passed=$passed, failed=$failed, skipped=$skipped, flaky=$flaky" >> $GITHUB_ENV
+            echo "Passed Tests: $passed, Failed Tests: $failed, Flaky Tests: $flaky, Skipped Tests: $skipped"
           else
             echo "playwright-results.json does not exist or is not a file"
           fi
 
       - name: Output test results
         run: |
-          echo "Passed Tests: $passed, Failed Tests: $failed"
+          echo "Passed Tests: $passed, Failed Tests: $failed, Flaky Tests: $flaky, Skipped Tests: $skipped"
 
       - name: Generate timestamp
         id: timestamp
