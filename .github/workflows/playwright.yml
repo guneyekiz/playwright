@@ -34,7 +34,7 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=html,json,allure-playwright
+        run: npx playwright test --reporter=html
         continue-on-error: true
 
       - name: Generate timestamp
@@ -45,28 +45,9 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Install Allure commandline
-        run: npm install -g allure-commandline
-      
-      - name: Generate Allure report
-        run: allure generate allure-results --clean -o allure-report
-
-      - name: Zip Allure report
-        run: zip -r allure-report.zip allure-report/
-
-      - name: Upload Allure report as artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: allure-report
-          path: allure-report.zip  
-
-  
-
-     
-
-
       - name: Zip Playwright report
         run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+
       - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
@@ -87,12 +68,6 @@ jobs:
         # Fetch gh-pages branch to ensure it's locally available
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
-
-      - name: Remove or stash untracked files
-        run: |
-          git clean -fdx
-          # or use git stash --include-untracked
-          # git stash save "Stashing untracked before switching branches"  
 
       - name: Checkout gh-pages branch
         run: |
