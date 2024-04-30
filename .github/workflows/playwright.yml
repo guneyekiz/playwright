@@ -33,9 +33,9 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
-      - name: Run Playwright tests for JSON report
+      - name: Run Playwright tests and generate JSON report
         run: |
-          npx playwright test --reporter=json --output=playwright-results.json
+          npx playwright test --reporter=json > playwright-results.json
         continue-on-error: true
 
       - name: List files in the directory
@@ -48,14 +48,12 @@ jobs:
             failed=$(jq '.stats.failures' playwright-results.json)
             echo "passed=$passed, failed=$failed" >> $GITHUB_ENV
           else
-            echo "playwright-results.json does not exist"
+            echo "playwright-results.json does not exist or is not a file"
           fi
 
       - name: Output test results
         run: |
-          echo "Passed Tests: $passed, Failed Tests: $failed"  
-
-     
+          echo "Passed Tests: $passed, Failed Tests: $failed"
        
        
 
