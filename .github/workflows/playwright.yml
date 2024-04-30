@@ -53,12 +53,22 @@ jobs:
           echo "playwright-results.json does not exist or is not a file"
          fi
 
-      - name: Output test results
+     # - name: Output test results
+     #   run: |
+     #    echo "Passed Tests: $passed, Failed Tests: $failed, Flaky Tests: $flaky, Skipped Tests: $skipped"
+
+      - name: Output test passed
         run: |
-         echo "Passed Tests: $passed, Failed Tests: $failed, Flaky Tests: $flaky, Skipped Tests: $skipped"
+         echo "Passed Tests: $passed" 
 
+      - name: Output test flaky
+        run: |
+         echo "Flaky Tests: $flaky"
 
-
+      - name: Output test skipped
+        run: |
+         echo "Skipped Tests: $skipped"      
+      
       - name: Generate timestamp
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
