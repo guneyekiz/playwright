@@ -53,8 +53,8 @@ jobs:
           echo "playwright-results.json does not exist or is not a file"
          fi
 
-     - name: Output test results
-       run: |
+      - name: Output test results
+        run: |
          echo "Passed Tests: $passed, Failed Tests: $failed, Flaky Tests: $flaky, Skipped Tests: $skipped"
 
 
