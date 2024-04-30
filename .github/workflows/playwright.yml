@@ -33,15 +33,11 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
-      - name: Run Playwright tests and generate JSON and playwright report
-        run: |
-           npx playwright test --reporter=html,json --reporter-output=json=playwright-results.json
-        continue-on-error: true
+      - name: Run Playwright tests with configured reporters
+        run: npx playwright test
+        continue-on-error: true  
 
-      - name: List files in the directory
-        run: ls -la
-
-      - name: Display JSON content
+      - name: Display JSON content (for debugging)
         run: cat playwright-results.json
 
       - name: Parse JSON report for results
@@ -56,9 +52,7 @@ jobs:
           fi
 
       - name: Output test results
-        run: |
-          echo "Passed Tests: $passed, Failed Tests: $failed"
-       
+        run: echo "Passed Tests: $passed, Failed Tests: $failed"
 
       - name: Generate timestamp
         id: timestamp
