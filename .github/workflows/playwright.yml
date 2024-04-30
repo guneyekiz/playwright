@@ -36,7 +36,7 @@ jobs:
       - name: Run Playwright tests
         run: |
          npx playwright test --reporter=json > playwright-results.json
-         continue-on-error: true
+        continue-on-error: true
 
       - name: Analyze Test Results
         id: test_analysis
