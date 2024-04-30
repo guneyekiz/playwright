@@ -57,16 +57,20 @@ jobs:
          fi
 
       - name: Output test passed
-        run: echo "Passed Tests: ${{ env.passed }}"
+        run: |
+         echo "Passed Tests: ${{ env.passed }}"
 
       - name: Output test failed
-        run: echo "Failed Tests: ${{ env.failed }}"
+        run: |
+         echo "Failed Tests: ${{ env.failed }}"
 
       - name: Output test flaky
-        run: echo "Flaky Tests: ${{ env.flaky }}"
+        run: |
+         echo "Flaky Tests: ${{ env.flaky }}"
 
       - name: Output test skipped
-        run: echo "Skipped Tests: ${{ env.skipped }}"
+        run: |
+         echo "Skipped Tests: ${{ env.skipped }}"
 
    
       
