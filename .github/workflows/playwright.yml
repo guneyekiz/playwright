@@ -62,7 +62,7 @@ jobs:
 
       - name: Output test failed
         run: |
-         echo "Passed Tests: $failed" >> $GITHUB_ENV   
+         echo "Failed Tests: $failed" >> $GITHUB_ENV   
 
       - name: Output test flaky
         run: |
