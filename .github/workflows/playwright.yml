@@ -42,12 +42,18 @@ jobs:
         continue-on-error: true
       
       - name: Extract results from HTML report
+        id: test_results
         run: |
-          # Example using grep and sed, adjust according to your HTML structure
           passed=$(grep 'class="passed"' playwright-report/index.html | wc -l)
           failed=$(grep 'class="failed"' playwright-report/index.html | wc -l)
-          echo "::set-output name=passed::$passed"
-          echo "::set-output name=failed::$failed"
+          echo "PASSED_TESTS=$passed" >> $GITHUB_ENV
+          echo "FAILED_TESTS=$failed" >> $GITHUB_ENV
+
+      - name: Display test results
+        run: |
+          echo "Number of passed tests: $PASSED_TESTS"
+          echo "Number of failed tests: $FAILED_TESTS"
+
 
    
 
