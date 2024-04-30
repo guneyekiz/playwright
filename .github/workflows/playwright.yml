@@ -44,11 +44,11 @@ jobs:
       - name: Display JSON content
         run: cat playwright-results.json
 
-      - name: Parse JSON report for results
+         - name: Parse JSON report for results
         run: |
           if [ -f playwright-results.json ]; then
-            passed=$(jq '.stats.passes' playwright-results.json)
-            failed=$(jq '.stats.failures' playwright-results.json)
+            passed=$(jq '.stats.expected' playwright-results.json)
+            failed=$(jq '.stats.unexpected' playwright-results.json)
             echo "passed=$passed, failed=$failed" >> $GITHUB_ENV
             echo "Passed Tests: $passed, Failed Tests: $failed"
           else
@@ -58,7 +58,6 @@ jobs:
       - name: Output test results
         run: |
           echo "Passed Tests: $passed, Failed Tests: $failed"
-       
        
 
       - name: Generate timestamp
