@@ -44,7 +44,7 @@ jobs:
       - name: Display JSON content
         run: cat playwright-results.json
 
-         - name: Parse JSON report for results
+      - name: Parse JSON report for results
         run: |
           if [ -f playwright-results.json ]; then
             passed=$(jq '.stats.expected' playwright-results.json)
