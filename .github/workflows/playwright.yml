@@ -47,14 +47,15 @@ jobs:
           skipped=$(jq -r '.stats.skipped' playwright-results.json)
           failed=$(jq -r '.stats.unexpected' playwright-results.json)
           flaky=$(jq -r '.stats.flaky' playwright-results.json)
-          echo "export passed=$passed" >> $GITHUB_ENV
-          echo "export skipped=$skipped" >> $GITHUB_ENV
-          echo "export failed=$failed" >> $GITHUB_ENV
-          echo "export flaky=$flaky" >> $GITHUB_ENV
-          echo "Passed Tests: $passed, Failed Tests: $failed, Flaky Tests: $flaky, Skipped Tests: $skipped"
+          echo "passed=$passed" >> $GITHUB_ENV
+          echo "skipped=$skipped" >> $GITHUB_ENV
+          echo "failed=$failed" >> $GITHUB_ENV
+          echo "flaky=$flaky" >> $GITHUB_ENV
+          echo "Debug - Passed: $passed, Failed: $failed, Flaky: $flaky, Skipped: $skipped"
          else
           echo "playwright-results.json does not exist or is not a file"
          fi
+   
 
       - name: Output test passed
         run: |
