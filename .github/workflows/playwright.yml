@@ -88,6 +88,12 @@ jobs:
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
 
+      - name: Remove or stash untracked files
+        run: |
+          git clean -fdx
+          # or use git stash --include-untracked
+          # git stash save "Stashing untracked before switching branches"  
+
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
