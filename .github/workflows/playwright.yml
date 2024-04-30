@@ -30,27 +30,23 @@ jobs:
       - name: Install Playwright
         run: npm install playwright
 
-      - name: Install browsers
-        run: npx playwright install
+      - name: Install Chromium for Playwright
+        run: npx playwright install chromium
 
-      - name: Run Playwright tests for HTML report
-        run: npx playwright test --reporter=html
+      - name: Run Playwright tests
+        run: |
+        npx playwright test --reporter=json > playwright-results.json
         continue-on-error: true
 
-      - name: Debug - Show index.html content
-        run: cat playwright-report/index.html
-
-      - name: Extract test results
+      - name: Analyze Test Results
+        id: test_analysis
         run: |
-          passed=$(grep 'data-test-result="passed"' playwright-report/index.html | wc -l)
-          failed=$(grep 'data-test-result="failed"' playwright-report/index.html | wc -l)
-          echo "PASSED_TESTS=$passed" >> $GITHUB_ENV
-          echo "FAILED_TESTS=$failed" >> $GITHUB_ENV
+        result=$(jq '.stats.failures' playwright-results.json)
+        echo "::set-output name=test_failed::$result"
+  
 
-      - name: Display test results
-        run: |
-          echo "Number of passed tests: $PASSED_TESTS"
-          echo "Number of failed tests: $FAILED_TESTS"
+
+
 
    
 
