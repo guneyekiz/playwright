@@ -12,6 +12,7 @@
     "@types/node": "^20.11.30",
     "allure-commandline": "^2.29.0",
     "allure-playwright": "^2.15.1",
-    "ts-jest": "^29.1.2"
+    "playwright": "^1.43.1",
+    "playwright-bdd": "^6.0.0-1"
   }
 }
