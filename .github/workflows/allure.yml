@@ -1,1 +1,157 @@
 
+name: CI and Deploy to GitHub Pages  
+ 
+on:   
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main] 
+  workflow_dispatch:  
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      deployments: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npm install playwright
+
+      - name: Install browsers
+        run: npx playwright install
+
+      - name: Run Playwright tests with configured reporters
+        run: npx playwright test
+        continue-on-error: true  
+
+      - name: Display JSON content (for debugging)
+        run: cat playwright-results.json
+
+      - name: Parse JSON report for results
+        run: |
+         if [ -f playwright-results.json ]; then
+          passed=$(jq -r '.stats.expected' playwright-results.json)
+          skipped=$(jq -r '.stats.skipped' playwright-results.json)
+          failed=$(jq -r '.stats.unexpected' playwright-results.json)
+          flaky=$(jq -r '.stats.flaky' playwright-results.json)
+          echo "passed=$passed" >> $GITHUB_ENV
+          echo "skipped=$skipped" >> $GITHUB_ENV
+          echo "failed=$failed" >> $GITHUB_ENV
+          echo "flaky=$flaky" >> $GITHUB_ENV
+          echo "Debug - Passed: $passed, Failed: $failed, Flaky: $flaky, Skipped: $skipped"
+         else
+          echo "playwright-results.json does not exist or is not a file"
+         fi
+   
+
+      - name: Output test passed
+        run: |
+         echo "Passed Tests: ${{ env.passed }}"
+
+      - name: Output test failed
+        run: |
+         echo "Failed Tests: ${{ env.failed }}"
+
+      - name: Output test flaky
+        run: |
+         echo "Flaky Tests: ${{ env.flaky }}"
+
+      - name: Output test skipped
+        run: |
+         echo "Skipped Tests: ${{ env.skipped }}"
+
+      - name: Calculate passing percentage rate and take action
+        run: |
+          total_tests=$(( ${{ env.passed }} + ${{ env.failed }} ))
+          if [ $total_tests -eq 0 ]; then
+           echo "No tests were run."
+          else
+          passing_rate=$(( 100 * ${{ env.passed }} / $total_tests ))
+          echo "Passing Rate: $passing_rate%"
+          if [ $passing_rate -gt 80 ]; then
+           echo "Great! The passing rate is above 80%."
+          else
+           echo "Improvement needed. The passing rate is at or below 80%."
+          fi
+          fi   
+
+   
+      
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
+
+
+      - name: Create timestamped directory for reports
+        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Zip Playwright report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+
+      - name: Upload Playwright report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+
+      - name: Copy Playwright report to timestamped directory
+        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Stash package files to prevent checkout issues
+        run: git stash push -- package-lock.json package.json
+
+        # Fetch gh-pages branch to ensure it's locally available
+      - name: Fetch gh-pages branch
+        run: git fetch origin gh-pages:gh-pages || true
+
+      - name: Checkout gh-pages branch
+        run: |
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
+
+      - name: Remove all except index.html and timestamped directories
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
+
+      - name: Copy latest Playwright report to root
+        run: |
+          cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No Playwright report found to copy."
+
+      - name: Commit Playwright report to gh-pages
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy Playwright report ${GITHUB_SHA}"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
+        run: |
+          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+
+      - name: Output Playwright report URL
+        run: | 
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/playwright-report/"
