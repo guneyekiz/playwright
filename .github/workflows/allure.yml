@@ -44,10 +44,15 @@ jobs:
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
       - name: Generate Allure Report
-        run: allure generate allure-results --clean -o allure-report/${{ steps.timestamp.outputs.timestamp }}/
+        run: allure generate allure-results --clean -o ${{ steps.timestamp.outputs.timestamp }}/allure-report/
 
       - name: Create Directory for Zipping
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: List files in timestamp directory
+        run: |
+          echo "Listing contents of ${{ steps.timestamp.outputs.timestamp }}"
+          ls -alh ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Zip Allure report
         run: |
