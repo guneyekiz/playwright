@@ -35,32 +35,23 @@ jobs:
 
       - name: Run Playwright tests with configured reporters
         run: npx playwright test
-        continue-on-error: true  
-   
-      
+        continue-on-error: true
+
       - name: Generate timestamp
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
+      - name: Generate Allure Report
+        run: allure generate allure-results --clean -o allure-report/${{ steps.timestamp.outputs.timestamp }}/
 
-      - name: Create timestamped directory for reports
-        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+      - name: Zip Allure report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip allure-report/${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
-
-      - name: Upload Playwright report as artifact
+      - name: Upload Allure report as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+          name: allure-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip
 
-      - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
-
-      - name: Configure Git
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
 
   
