@@ -39,8 +39,14 @@ jobs:
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
+      - name: Print timestamp
+        run: echo "Timestamp: ${{ steps.timestamp.outputs.timestamp }}"
+
       - name: Create timestamped directory for reports
         run: mkdir -p allure-history/${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Print directory structure before report generation
+        run: ls -R
 
       - name: Load test report history
         uses: actions/checkout@v4
@@ -57,6 +63,9 @@ jobs:
           gh_pages: gh-pages
           allure_history: "allure-history/${{ steps.timestamp.outputs.timestamp }}"
           allure_results: allure-results
+
+      - name: Print directory structure after report generation
+        run: ls -R allure-history/${{ steps.timestamp.outputs.timestamp }}
 
       - name: Publish test report
         uses: peaceiris/actions-gh-pages@v4
