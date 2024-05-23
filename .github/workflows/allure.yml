@@ -3,7 +3,7 @@ name: CI and Deploy Allure Report to GitHub Pages
 on:
   push:
     branches: [main]
-  pull_request:
+  pull_request: 
     branches: [main]
 
 jobs:
