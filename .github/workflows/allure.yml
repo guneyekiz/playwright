@@ -1,26 +1,26 @@
-name: CI and Deploy to GitHub Pages
+name: CI and Deploy Allure Report to GitHub Pages
 
 on:
   push:
-    branches: [mains]
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       deployments: write
+
     steps:
-      - name: Checkout Repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Use Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -31,7 +31,7 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
-      - name: Run Playwright tests with configured reporters
+      - name: Run Playwright tests
         run: npx playwright test
         continue-on-error: true
 
@@ -39,61 +39,41 @@ jobs:
         id: timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
 
-      - name: Print timestamp
-        run: |
-          echo "Timestamp: $TIMESTAMP"
-          echo "GITHUB_ENV content:"
-          cat $GITHUB_ENV
-
       - name: Create timestamped directory for reports
-        run: |
-          mkdir -p allure-history/$TIMESTAMP
-          echo "Created directory: allure-history/$TIMESTAMP"
+        run: mkdir -p allure-history/${{ env.TIMESTAMP }}
 
-      - name: Print directory structure before report generation
-        run: ls -R
-
-      - name: Load test report history
-        uses: actions/checkout@v4
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-
-      - name: Build test report
+      - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
         if: always()
         with:
           gh_pages: gh-pages
-          allure_history: "allure-history/$TIMESTAMP"
+          allure_history: "allure-history/${{ env.TIMESTAMP }}"
           allure_results: allure-results
 
-      - name: Copy allure-results to timestamped directory
-        run: cp -r allure-results/* allure-history/$TIMESTAMP/
-
       - name: Print directory structure after report generation
-        run: ls -R allure-history/$TIMESTAMP
+        run: ls -R allure-history/${{ env.TIMESTAMP }}
 
       - name: Configure Git
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
 
       - name: Checkout gh-pages branch
-        run: git checkout gh-pages
+        run: git checkout -b gh-pages origin/gh-pages
 
-      - name: Merge changes
-        run: git merge origin/gh-pages --allow-unrelated-histories
+      - name: Copy latest Allure report to root
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Commit and Push
         env:
-          TIMESTAMP: ${{ env.TIMESTAMP }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
         run: |
-          git add allure-history/$TIMESTAMP
-          git commit -m "Add report for $TIMESTAMP"
-          git push origin gh-pages
+          git add .
+          git commit -m "Add report for ${{ env.TIMESTAMP }}"
+          git push -f https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+
+      - name: Output Allure report URL
+        run: echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
