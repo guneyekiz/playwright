@@ -62,7 +62,7 @@ jobs:
         with:
           gh_pages: gh-pages
           allure_history: "allure-history/${{ steps.timestamp.outputs.TIMESTAMP }}"
-          allure_results: allure-results
+          allure_results: allure-results 
 
       - name: Print directory structure after report generation
         run: ls -R allure-history/${{ steps.timestamp.outputs.TIMESTAMP }}
