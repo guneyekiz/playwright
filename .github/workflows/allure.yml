@@ -35,8 +35,12 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
-      - name: Set timestamp environment variable
-        run: echo "TIMESTAMP=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
+
+      - name: Create timestamped directory for reports
+        run: mkdir -p allure-history/${{ steps.timestamp.outputs.timestamp }}
 
       - name: Load test report history
         uses: actions/checkout@v4
@@ -51,7 +55,7 @@ jobs:
         if: always()
         with:
           gh_pages: gh-pages
-          allure_history: "allure-history/${{ env.TIMESTAMP }}"
+          allure_history: "allure-history/${{ steps.timestamp.outputs.timestamp }}"
           allure_results: allure-results
 
       - name: Publish test report
@@ -60,4 +64,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: "allure-history/${{ env.TIMESTAMP }}"
+          publish_dir: "allure-history/${{ steps.timestamp.outputs.timestamp }}"
