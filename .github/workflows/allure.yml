@@ -39,11 +39,11 @@ jobs:
         id: timestamp
         run: echo "timestamp=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
 
+      - name: Print timestamp
+        run: echo "Timestamp: ${{ env.timestamp }}"
+
       - name: Create timestamped directory for reports
         run: mkdir -p allure-history/${{ env.timestamp }}
-
-      - name: Print directory structure before report generation
-        run: ls -R
 
       - name: Load test report history
         uses: actions/checkout@v4
@@ -60,6 +60,9 @@ jobs:
           gh_pages: gh-pages
           allure_history: "allure-history/${{ env.timestamp }}"
           allure_results: allure-results
+
+      - name: Copy allure-results to timestamped directory
+        run: cp -r allure-results/* allure-history/${{ env.timestamp }}/
 
       - name: Print directory structure after report generation
         run: ls -R allure-history/${{ env.timestamp }}
