@@ -1,11 +1,11 @@
 
 name: CI and Deploy to GitHub Pages  
- #a
-#on:   
- # push:
- #   branches: [main]
- # pull_request:
-  #  branches: [main] 
+ 
+on:   
+  push:
+    branches: [maine]
+  pull_request:
+    branches: [maine] 
   workflow_dispatch:  
 
 jobs:
