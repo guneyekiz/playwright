@@ -45,6 +45,9 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p allure-history/${{ env.timestamp }}
 
+      - name: Print directory structure before report generation
+        run: ls -R
+
       - name: Load test report history
         uses: actions/checkout@v4
         if: always()
