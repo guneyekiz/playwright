@@ -1,66 +1,64 @@
-name: CI and Deploy to GitHub Pages
-
+name: workflow_0212
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
+     branches:
+       - main
+     
 
+  pull_request: 
+     branches:
+       - main
+    
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      deployments: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright
-        run: npm install playwright
-
-      - name: Install browsers
-        run: npx playwright install
-
-      - name: Install Allure Command Line
-        run: npm install -g allure-commandline
-
-      - name: Run Playwright tests with configured reporters
-        run: npx playwright test
-        continue-on-error: true
-
-      - name: Generate timestamp
-        id: timestamp
-        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
-
-      - name: Generate Allure Report
-        run: allure generate allure-results --clean -o ${{ steps.timestamp.outputs.timestamp }}/allure-report/
-
-      - name: Create Directory for Zipping
-        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
-
-      - name: List files in timestamp directory
-        run: |
-          echo "Listing contents of ${{ steps.timestamp.outputs.timestamp }}"
-          ls -alh ${{ steps.timestamp.outputs.timestamp }}
-
-      - name: Zip Allure report
-        run: |
-          cd ${{ steps.timestamp.outputs.timestamp }}
-          zip -r allure-report.zip allure-report/
-
-      - name: Upload Allure report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: allure-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/allure-report.zip
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      deployments: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+    
+ 
+      - name: Us Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+        
+ 
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright
+        run: npm install playwright@1.43.1
+      - name: Install browsers
+        run: npx playwright install
+      - name: Run Playwright tests with configured reporters
+        run: npx playwright test 
+        continue-on-error: true
+ 
+ 
+      - name: Load test report history
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+ 
+            
+      - name: Build test report
+        uses: simple-elf/allure-report-action@v1.9
+        if: always()
+        with:
+          gh_pages: gh-pages
+          allure_history: allure-history
+          allure_results: allure-results
+ 
+      - name: Publish test report
+        uses: peaceiris/actions-gh-pages@v4
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history
