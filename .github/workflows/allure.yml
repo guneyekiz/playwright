@@ -36,13 +36,14 @@ jobs:
         continue-on-error: true
 
       - name: Generate timestamp
-        run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
+        id: timestamp
+        run: echo "timestamp=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
 
       - name: Print timestamp
-        run: echo "Timestamp: ${{ env.TIMESTAMP }}"
+        run: echo "Timestamp: ${{ steps.timestamp.outputs.timestamp }}"
 
       - name: Create timestamped directory for reports
-        run: mkdir -p allure-history/${{ env.TIMESTAMP }}
+        run: mkdir -p allure-history/${{ env.timestamp }}
 
       - name: Print directory structure before report generation
         run: ls -R
@@ -60,11 +61,11 @@ jobs:
         if: always()
         with:
           gh_pages: gh-pages
-          allure_history: "allure-history/${{ env.TIMESTAMP }}"
+          allure_history: "allure-history/${{ env.timestamp }}"
           allure_results: allure-results
 
       - name: Print directory structure after report generation
-        run: ls -R allure-history/${{ env.TIMESTAMP }}
+        run: ls -R allure-history/${{ env.timestamp }}
 
       - name: Publish test report
         uses: peaceiris/actions-gh-pages@v4
@@ -72,4 +73,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: "allure-history/${{ env.TIMESTAMP }}"
+          publish_dir: "allure-history/${{ env.timestamp }}"
