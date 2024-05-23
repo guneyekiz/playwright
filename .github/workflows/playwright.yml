@@ -3,7 +3,7 @@ name: CI and Deploy to GitHub Pages
  
 on:   
   push:
-    branches: [maine]
+    branches: [main]
   pull_request:
     branches: [maine] 
   workflow_dispatch:  
