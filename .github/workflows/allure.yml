@@ -37,10 +37,13 @@ jobs:
 
       - name: Generate timestamp
         id: timestamp
+        run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
+
+      - name: Print timestamp
         run: |
-          TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')
-          echo "TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
           echo "Timestamp: $TIMESTAMP"
+          echo "GITHUB_ENV content:"
+          cat $GITHUB_ENV
 
       - name: Create timestamped directory for reports
         run: |
@@ -65,6 +68,9 @@ jobs:
           gh_pages: gh-pages
           allure_history: "allure-history/$TIMESTAMP"
           allure_results: allure-results
+
+      - name: Copy allure-results to timestamped directory
+        run: cp -r allure-results/* allure-history/$TIMESTAMP/
 
       - name: Print directory structure after report generation
         run: ls -R allure-history/$TIMESTAMP
