@@ -64,18 +64,30 @@ jobs:
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
-          git reset --soft origin/gh-pages || true
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
 
-      - name: Copy latest Allure report to gh-pages
+      - name: Remove all except index.html and timestamped directories
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} +
+
+      - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
-      - name: Commit and Push
+      - name: Commit Allure report to gh-pages
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy Allure report ${GITHUB_SHA}"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: |
-          git add . 
-          git commit -m "Add report for ${{ env.TIMESTAMP }}"
-          git push -f https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Allure report URL
         run: |
