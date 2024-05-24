@@ -65,7 +65,7 @@ jobs:
         run: git stash push -- package-lock.json package.json
 
       - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages
+        run: git fetch origin gh-pages:gh-pages || true
 
       - name: Checkout gh-pages branch
         run: |
@@ -93,7 +93,8 @@ jobs:
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+        run: |
+          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Allure report URL
         run: |
