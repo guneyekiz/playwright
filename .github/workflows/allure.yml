@@ -1,9 +1,9 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push: 
+  push:
     branches: [main]
-  pull_request: 
+  pull_request:
     branches: [main]
 
 jobs:
@@ -42,6 +42,9 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p allure-history/${{ env.TIMESTAMP }}
 
+      - name: Change permissions for files
+        run: sudo chmod -R u+w .
+
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
         if: always()
@@ -59,39 +62,21 @@ jobs:
           git config user.email "actions@github.com"
 
       - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages:gh-pages || true
+        run: git fetch origin gh-pages
 
       - name: Checkout gh-pages branch
-        run: |
-          git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
-
-      - name: Change permissions for files
-        run: |
-          chmod -R u+w .
-
-      - name: Remove all except index.html and timestamped directories
-        run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} +
+        run: git checkout -b gh-pages origin/gh-pages
 
       - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
-      - name: Commit Allure report to gh-pages
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add -A
-            git commit -m "Deploy Allure report ${GITHUB_SHA}"
-          else
-            echo "No changes to commit to gh-pages."
-          fi
-
-      - name: Push changes using PAT
+      - name: Commit and Push
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+        run: |
+          git add . 
+          git commit -m "Add report for ${{ env.TIMESTAMP }}"
+          git push -f https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Allure report URL
         run: |
