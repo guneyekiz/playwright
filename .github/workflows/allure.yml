@@ -3,7 +3,7 @@ name: CI and Deploy Allure Report to GitHub Pages
 on:
   push: 
     branches: [main]
-  pull_request: 
+  pull_request:
     branches: [main]
 
 jobs: 
@@ -76,11 +76,10 @@ jobs:
 
       - name: Remove all except index.html and timestamped directories
         run: |
-            find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} + || true
-
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} + || true
 
       - name: Copy latest Allure report to root
-        run: cp -r allure-history/${{ env.TIMESTAMP }} .
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Commit Allure report to gh-pages
         run: |
