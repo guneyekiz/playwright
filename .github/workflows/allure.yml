@@ -59,12 +59,14 @@ jobs:
           git config user.email "actions@github.com"
 
       - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages
+        run: git fetch origin gh-pages:gh-pages || true
 
       - name: Checkout gh-pages branch
-        run: git checkout -b gh-pages origin/gh-pages
+        run: |
+          git checkout gh-pages || git checkout --orphan gh-pages
+          git reset --soft origin/gh-pages || true
 
-      - name: Copy latest Allure report to root
+      - name: Copy latest Allure report to gh-pages
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Commit and Push
@@ -77,4 +79,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
