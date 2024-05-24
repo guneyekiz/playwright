@@ -68,6 +68,10 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
+      - name: Change permissions for files
+        run: |
+          chmod -R u+w .
+
       - name: Remove all except index.html and timestamped directories
         run: |
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} +
