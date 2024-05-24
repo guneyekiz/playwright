@@ -68,7 +68,15 @@ jobs:
         run: git fetch origin gh-pages
 
       - name: Checkout gh-pages branch
-        run: git checkout gh-pages || git checkout --orphan gh-pages
+        run: |
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
+
+      - name: Remove all except index.html and timestamped directories
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} +  
 
       - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
