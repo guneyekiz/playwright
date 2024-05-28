@@ -36,7 +36,7 @@ jobs:
         continue-on-error: true
 
       - name: List test results
-        run: ls -la allure-results   
+        run: ls -la allure-results
 
       - name: Setup Allure Commandline
         run: sudo npm install -g allure-commandline
