@@ -64,12 +64,14 @@ jobs:
       - name: Copy index.html to root
         run: cp allure-history/${{ env.TIMESTAMP }}/index.html .
 
+        
       - name: Commit Allure report and index.html to gh-pages
         run: |
+          git status --porcelain
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
-            git commit -m "Update index.html"
+            # Combine both messages into one commit to simplify process
+            git commit -m "Deploy Allure report and update index.html for ${{ env.TIMESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
           fi
