@@ -1,12 +1,12 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push:
+  push: 
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main] 
 
-jobs:
+jobs: 
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -38,13 +38,23 @@ jobs:
       - name: Generate timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
 
-      - name: Build Allure report in a temporary directory
-        run: npx allure generate allure-results --clean -o temp-allure-report
+      - name: Create timestamped directory for reports
+        run: mkdir -p allure-history/${{ env.TIMESTAMP }}
+
+      - name: Build Allure report
+        uses: simple-elf/allure-report-action@v1.9
+        if: always()
+        with:
+          gh_pages: gh-pages
+          allure_history: "allure-history/${{ env.TIMESTAMP }}"
+          allure_results: allure-results
 
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+
+
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
@@ -52,23 +62,23 @@ jobs:
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
-          git reset --soft origin/gh-pages || true
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
 
-      - name: Create timestamped directory in gh-pages
-        run: mkdir -p allure-report/${{ env.TIMESTAMP }}
+      - name: Remove all except necessary files and directories
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} + || true
+          find allure-history -type d ! -name '202*' -exec rm -rf {} + || true
 
-      - name: Move generated report to timestamped directory
-        run: mv temp-allure-report/* allure-report/${{ env.TIMESTAMP }}/
 
-      - name: Clean up temporary directory
-        run: rm -rf temp-allure-report
-
-      - name: Ensure changes are detected
-        run: git add -A
+      - name: Copy latest Allure report to root
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
+            git add -A
             git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
@@ -77,9 +87,8 @@ jobs:
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: |
-          git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
+        run: git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
 
       - name: Output Allure report URL
         run: |
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/${{ env.TIMESTAMP }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
