@@ -1,12 +1,12 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push:
+  push: 
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main] 
 
-jobs:
+jobs: 
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -32,14 +32,20 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test
+        run: npx playwright test --reporter=allure
         continue-on-error: true
+
+      - name: Setup Allure Commandline
+        run: sudo npm install -g allure-commandline
 
       - name: Generate timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
 
-      - name: Build Allure report
-        run: npx allure generate allure-results --clean -o allure-history/${{ env.TIMESTAMP }}
+      - name: Create timestamped directory for reports
+        run: mkdir -p allure-history/${{ env.TIMESTAMP }}
+
+      - name: Generate Allure report
+        run: allure generate allure-results --clean -o allure-history/${{ env.TIMESTAMP }}
 
       - name: Configure Git
         run: |
@@ -56,27 +62,13 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Backup existing allure-history
-        run: |
-          mkdir -p backup-allure-history
-          cp -r allure-history/* backup-allure-history/ || true
-
-      - name: Move new report to gh-pages
-        run: |
-          mkdir -p allure-history/${{ env.TIMESTAMP }}
-          cp -r allure-history/${{ env.TIMESTAMP }}/* allure-history/${{ env.TIMESTAMP }}/
-
-      - name: Restore previous allure-history
-        run: |
-          cp -r backup-allure-history/* allure-history/ || true
-
-      - name: Remove temporary backup directory
-        run: rm -rf backup-allure-history
+      - name: Copy latest Allure report to its timestamp directory
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* allure-history/${{ env.TIMESTAMP }}
 
       - name: Commit Allure report to gh-pages
         run: |
-          git add allure-history
           if [ -n "$(git status --porcelain)" ]; then
+            git add -A
             git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
@@ -89,4 +81,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
