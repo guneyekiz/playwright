@@ -65,7 +65,7 @@ jobs:
         run: git stash push -- package-lock.json package.json
 
       - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages
+        run: git fetch origin gh-pages || true
 
       - name: Checkout gh-pages branch
         run: |
@@ -76,7 +76,7 @@ jobs:
 
       - name: Remove all except index.html and timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} + || true
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history*' ! -name 'index.html' -exec rm -rf {} + 
 
       - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
@@ -93,7 +93,8 @@ jobs:
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+        run: |
+         git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
       - name: Output Allure report URL
         run: |
