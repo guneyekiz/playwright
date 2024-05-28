@@ -49,8 +49,6 @@ jobs:
           allure_history: "allure-history/${{ env.TIMESTAMP }}"
           allure_results: allure-results
 
-
-
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
@@ -64,7 +62,6 @@ jobs:
 
       - name: Checkout gh-pages branch
         run: |
-          git fetch origin gh-pages:gh-pages --depth=1 || true
           git checkout gh-pages || git checkout --orphan gh-pages
           if [ "$(git rev-parse --abbrev-ref HEAD)" != "gh-pages" ]; then
             echo "gh-pages did not exist, creating new orphan branch."
@@ -72,24 +69,33 @@ jobs:
           else
             git reset --soft origin/gh-pages
           fi
-      
+
+      - name: List files before cleanup
+        run: ls -la
 
       - name: Remove all except necessary files and directories
         run: |
           find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure*' ! -name '..' -exec rm -rf {} + || true
           find allure-history -type d ! -name '202*' -exec rm -rf {} + || true
 
-            
+      - name: List files after cleanup
+        run: ls -la
+
       - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .    
+
+      - name: List files after copying
+        run: ls -la
 
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
+            git status
           else
             echo "No changes to commit to gh-pages."
+            git status
           fi
 
       - name: Push changes using PAT
