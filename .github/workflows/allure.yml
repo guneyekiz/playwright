@@ -73,7 +73,9 @@ jobs:
 
 
       - name: Copy latest Allure report to root
-        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
+        run: |   
+             cp -r allure-history/${{ env.TIMESTAMP }} allure-report
+             cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Commit Allure report to gh-pages
         run: |
