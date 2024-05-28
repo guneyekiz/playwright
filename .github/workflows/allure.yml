@@ -77,3 +77,24 @@ jobs:
       - name: Remove all except index.html and timestamped directories
         run: |
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} + || true
+
+      - name: Copy latest Allure report to root
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
+
+      - name: Commit Allure report to gh-pages
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
+        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+
+      - name: Output Allure report URL
+        run: |
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
