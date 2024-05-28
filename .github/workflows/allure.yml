@@ -60,6 +60,9 @@ jobs:
       - name: Move generated report to timestamped directory
         run: mv temp-allure-report/* allure-report/${{ env.TIMESTAMP }}/
 
+      - name: Clean up temporary directory
+        run: rm -rf temp-allure-report
+
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
@@ -76,4 +79,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/${{ env.TIMESTAMP }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-report/${{ env.TIMESTAMP }}"
