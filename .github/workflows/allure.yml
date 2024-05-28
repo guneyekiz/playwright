@@ -1,12 +1,12 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push:
+  push: 
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main] 
 
-jobs:
+jobs: 
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -64,21 +64,13 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Stash existing changes
-        run: git stash
-
-      - name: Set permissions for allure-report directory
+      - name: Remove all except necessary files and directories
         run: |
-          mkdir -p allure-report
-          sudo chmod -R 777 allure-report
+          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} + || true
+          find allure-history -type d ! -name '202*' -exec rm -rf {} + || true
 
-      - name: Apply stash
-        run: git stash pop
-
-      - name: Copy latest Allure report to gh-pages
-        run: |
-          cp -r allure-history/${{ env.TIMESTAMP }} allure-report
-          cp -r allure-history/${{ env.TIMESTAMP }}/* .
+      - name: Copy latest Allure report to root
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Commit Allure report to gh-pages
         run: |
@@ -92,8 +84,7 @@ jobs:
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: |
-         git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
+        run: git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
 
       - name: Output Allure report URL
         run: |
