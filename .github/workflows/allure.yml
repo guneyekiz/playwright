@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main] 
 
-jobs:  
+jobs: 
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -63,15 +63,15 @@ jobs:
           fi
 
       - name: Copy latest Allure report to its timestamp directory
-        run: |
-          # This step was previously redundant. We ensure the directory is correctly populated
-          # during the 'Generate Allure report' step, so no need to copy again.
-          echo "Allure reports are stored in allure-history/${{ env.TIMESTAMP }}"
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* allure-history/${{ env.TIMESTAMP }}
 
-      - name: Commit Allure report to gh-pages
+      - name: Copy index.html to root
+        run: cp allure-history/${{ env.TIMESTAMP }}/index.html .
+
+      - name: Commit Allure report and index.html to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            git add allure-history/${{ env.TIMESTAMP }}/*
+            git add -A
             git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
@@ -85,3 +85,4 @@ jobs:
       - name: Output Allure report URL
         run: |
          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+         echo "Access the latest report at: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/"
