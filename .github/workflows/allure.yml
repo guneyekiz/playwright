@@ -64,9 +64,13 @@ jobs:
 
       - name: Checkout gh-pages branch
         run: |
+          git fetch origin gh-pages:gh-pages --depth=1 || true
           git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
+          if [ "$(git rev-parse --abbrev-ref HEAD)" != "gh-pages" ]; then
+            echo "gh-pages did not exist, creating new orphan branch."
+            git reset --hard  # Only necessary if starting fresh is required
+          else
+            git reset --soft origin/gh-pages
           fi
       
 
