@@ -4,7 +4,7 @@ on:
   push: 
     branches: [main]
   pull_request:
-    branches: [main] 
+    branches: [main]
 
 jobs: 
   deploy:
@@ -54,6 +54,7 @@ jobs:
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
+
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
@@ -61,16 +62,19 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
+      - name: Update index.html paths
+        run: |
+          sed -i 's|href="styles.css"|href="allure-history/${{ env.TIMESTAMP }}/styles.css"|g' allure-history/${{ env.TIMESTAMP }}/index.html
+          sed -i 's|src="app.js"|src="allure-history/${{ env.TIMESTAMP }}/app.js"|g' allure-history/${{ env.TIMESTAMP }}/index.html
+
       - name: Copy index.html to root
         run: cp allure-history/${{ env.TIMESTAMP }}/index.html .
 
-        
       - name: Commit Allure report and index.html to gh-pages
         run: |
           git status --porcelain
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            # Combine both messages into one commit to simplify process
             git commit -m "Deploy Allure report and update index.html for ${{ env.TIMESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
@@ -83,6 +87,5 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
-         echo "Access the latest report at: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/"
-
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+          echo "Access the latest report at: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/"
