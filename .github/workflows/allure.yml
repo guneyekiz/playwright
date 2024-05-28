@@ -1,7 +1,7 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push: 
+  push:
     branches: [main]
   pull_request:
     branches: [main] 
@@ -67,7 +67,7 @@ jobs:
       - name: Backup existing allure-history
         run: |
           mkdir -p backup-allure-history
-          rsync -av --ignore-existing allure-history/ backup-allure-history/ || echo "No existing allure-history to backup"
+          cp -r allure-history/* backup-allure-history/ || echo "No existing allure-history to backup"
 
       - name: Set permissions for backup
         run: sudo chmod -R 777 backup-allure-history
@@ -75,13 +75,13 @@ jobs:
       - name: Merge new Allure report with existing reports
         run: |
           sudo chmod -R 777 allure-history/${{ env.TIMESTAMP }}
-          rsync -av allure-history/${{ env.TIMESTAMP }}/ backup-allure-history/
+          cp -r allure-history/${{ env.TIMESTAMP }}/* backup-allure-history/
 
       - name: Restore merged allure-history
         run: |
           mkdir -p allure-history
           sudo chmod -R 777 allure-history
-          rsync -av backup-allure-history/ allure-history/
+          cp -r backup-allure-history/* allure-history/
           rm -rf backup-allure-history
 
       - name: Set final permissions for allure-history
