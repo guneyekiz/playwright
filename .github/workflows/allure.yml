@@ -64,9 +64,14 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
+      - name: Change permissions for Allure reports
+        run: sudo chmod -R u+rwX,go+rX,go-w allure-report/
+
       - name: Remove all except necessary files
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name 'allure-history/*' ! -name '..' -exec rm -rf {} +
+          find . -maxdepth 1 -type d ! -name '.' ! -name 'allure-history' ! -name '.git' -exec rm -rf {} +
+          find . -maxdepth 1 -type f ! -name 'index.html' -exec rm -rf {} +
+
 
       - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
