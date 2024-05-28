@@ -38,8 +38,8 @@ jobs:
       - name: Generate timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
 
-      - name: Build Allure report
-        run: npx allure generate allure-results --clean -o allure-report
+      - name: Build Allure report in a temporary directory
+        run: npx allure generate allure-results --clean -o temp-allure-report
 
       - name: Configure Git
         run: |
@@ -58,7 +58,7 @@ jobs:
         run: mkdir -p allure-report/${{ env.TIMESTAMP }}
 
       - name: Move generated report to timestamped directory
-        run: mv allure-report/* allure-report/${{ env.TIMESTAMP }}/
+        run: mv temp-allure-report/* allure-report/${{ env.TIMESTAMP }}/
 
       - name: Commit Allure report to gh-pages
         run: |
