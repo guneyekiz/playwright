@@ -75,7 +75,7 @@ jobs:
 
       - name: Remove all except necessary files and directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-report*' ! -regex './[0-9]+' -exec rm -rf {} +
+          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-report*' ! -regex './[0-9]+' -exec rm -rf {} + || true
 
       - name: List files after cleanup
         run: ls -la
