@@ -54,10 +54,11 @@ jobs:
           git checkout gh-pages || git checkout --orphan gh-pages
           git reset --soft origin/gh-pages || true
 
-      - name: Move generated report to gh-pages
-        run: |
-          mkdir -p allure-report/${{ env.TIMESTAMP }}
-          mv allure-report/* allure-report/${{ env.TIMESTAMP }}/
+      - name: Create timestamped directory in gh-pages
+        run: mkdir -p allure-report/${{ env.TIMESTAMP }}
+
+      - name: Move generated report to timestamped directory
+        run: mv allure-report/* allure-report/${{ env.TIMESTAMP }}/
 
       - name: Commit Allure report to gh-pages
         run: |
