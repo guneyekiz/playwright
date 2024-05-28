@@ -64,21 +64,20 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Backup existing allure-history
+      - name: Create backup directory
+        run: mkdir -p backup-allure-history
+
+      - name: Copy existing allure-history to backup
         run: |
-          mkdir -p backup-allure-history
-          mv allure-history/* backup-allure-history/ || echo "No existing allure-history to backup"
+          cp -r allure-history/* backup-allure-history/ || echo "No existing allure-history to backup"
+
+      - name: Copy new Allure report to allure-history
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Restore backup allure-history
         run: |
-          mkdir -p allure-history
-          mv backup-allure-history/* allure-history/ || echo "No backup history to restore"
-
-      - name: Copy latest Allure report to root
-        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
-
-      - name: Clean up
-        run: rm -rf backup-allure-history
+          cp -r backup-allure-history/* allure-history/
+          rm -rf backup-allure-history
 
       - name: Commit Allure report to gh-pages
         run: |
