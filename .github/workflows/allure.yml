@@ -1,7 +1,7 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push:
+  push: 
     branches: [main]
   pull_request:
     branches: [main] 
@@ -64,22 +64,21 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove unnecessary files
-        run: |
-          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} + || true
-
-      - name: Preserve previous allure-history
+      - name: Backup existing allure-history
         run: |
           mkdir -p backup-allure-history
-          mv allure-history/* backup-allure-history/
+          mv allure-history/* backup-allure-history/ || echo "No existing allure-history to backup"
+
+      - name: Restore backup allure-history
+        run: |
+          mkdir -p allure-history
+          mv backup-allure-history/* allure-history/ || echo "No backup history to restore"
 
       - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
-      - name: Restore previous allure-history
-        run: |
-          mv backup-allure-history/* allure-history/
-          rm -rf backup-allure-history
+      - name: Clean up
+        run: rm -rf backup-allure-history
 
       - name: Commit Allure report to gh-pages
         run: |
