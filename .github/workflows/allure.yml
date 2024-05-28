@@ -66,9 +66,7 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove all except necessary files and directories
-        run: |
-          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} + || true
+
           
       - name: Set permissions for allure-report
         run: sudo chmod -R 777 allure-report
