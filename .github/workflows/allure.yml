@@ -1,7 +1,7 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push:
+  push: 
     branches: [main]
   pull_request:
     branches: [main] 
@@ -64,13 +64,16 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
+      - name: Set permissions for allure-history
+        run: sudo chmod -R 777 allure-history || echo "No allure-history directory to set permissions"
+
       - name: Backup existing allure-history
         run: |
           mkdir -p backup-allure-history
           cp -r allure-history/* backup-allure-history/ || echo "No existing allure-history to backup"
 
       - name: Set permissions for backup
-        run: chmod -R 777 backup-allure-history
+        run: sudo chmod -R 777 backup-allure-history
 
       - name: Copy new Allure report to allure-history
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
@@ -80,8 +83,8 @@ jobs:
           cp -r backup-allure-history/* allure-history/
           rm -rf backup-allure-history
 
-      - name: Set permissions for allure-history
-        run: chmod -R 777 allure-history
+      - name: Set final permissions for allure-history
+        run: sudo chmod -R 777 allure-history
 
       - name: Commit Allure report to gh-pages
         run: |
