@@ -65,9 +65,7 @@ jobs:
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
+      
 
       - name: Remove all except necessary files and directories
         run: |
