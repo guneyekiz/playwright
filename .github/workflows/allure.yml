@@ -1,12 +1,12 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push: 
+  push:
     branches: [main]
   pull_request:
-    branches: [main] 
+    branches: [main]
 
-jobs: 
+jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -54,8 +54,6 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-
-
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
 
@@ -66,15 +64,21 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
+      - name: Stash existing changes
+        run: git stash
 
-          
-      - name: Set permissions for allure-report
-        run: sudo chmod -R 777 allure-report
+      - name: Set permissions for allure-report directory
+        run: |
+          mkdir -p allure-report
+          sudo chmod -R 777 allure-report
 
-      - name: Copy latest Allure report to root
-        run: |   
-             cp -r allure-history/${{ env.TIMESTAMP }} allure-report
-             cp -r allure-history/${{ env.TIMESTAMP }}/* .
+      - name: Apply stash
+        run: git stash pop
+
+      - name: Copy latest Allure report to gh-pages
+        run: |
+          cp -r allure-history/${{ env.TIMESTAMP }} allure-report
+          cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Commit Allure report to gh-pages
         run: |
@@ -88,8 +92,9 @@ jobs:
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
+        run: |
+         git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
