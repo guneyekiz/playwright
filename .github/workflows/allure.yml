@@ -71,6 +71,9 @@ jobs:
         run: |
           cp -r allure-history/* backup-allure-history/ || echo "No existing allure-history to backup"
 
+      - name: Set permissions for backup
+        run: chmod -R 777 backup-allure-history
+
       - name: Copy new Allure report to allure-history
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
@@ -78,6 +81,9 @@ jobs:
         run: |
           cp -r backup-allure-history/* allure-history/
           rm -rf backup-allure-history
+
+      - name: Set permissions for allure-history
+        run: chmod -R 777 allure-history
 
       - name: Commit Allure report to gh-pages
         run: |
