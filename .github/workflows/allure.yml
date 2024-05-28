@@ -35,6 +35,9 @@ jobs:
         run: npx playwright test --reporter=allure
         continue-on-error: true
 
+      - name: List test results
+        run: ls -la allure-results   
+
       - name: Setup Allure Commandline
         run: sudo npm install -g allure-commandline
 
@@ -45,7 +48,7 @@ jobs:
         run: mkdir -p allure-history/${{ env.TIMESTAMP }}
 
       - name: Generate Allure report
-        run: allure generate allure-results --clean -o allure-history/${{ env.TIMESTAMP }}
+        run: allure generate allure-results --clean -o allure-history/${{ env.TIMESTAMP }} || (echo "Allure generation failed" && exit 1)
 
       - name: Configure Git
         run: |
