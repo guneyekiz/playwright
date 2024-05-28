@@ -70,7 +70,8 @@ jobs:
         run: |
           find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} + || true
           
-
+      - name: Set permissions for allure-report
+        run: sudo chmod -R 777 allure-report
 
       - name: Copy latest Allure report to root
         run: |   
