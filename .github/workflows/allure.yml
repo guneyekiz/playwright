@@ -54,47 +54,34 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Stash package files to prevent checkout issues
-        run: git stash push -- package-lock.json package.json
+
 
       - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages || true
+        run: git fetch origin gh-pages
 
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" != "gh-pages" ]; then
-            echo "gh-pages did not exist, creating new orphan branch."
-            git reset --hard  # Only necessary if starting fresh is required
-          else
-            git reset --soft origin/gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
           fi
-
-      - name: List files before cleanup
-        run: ls -la
 
       - name: Remove all except necessary files and directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-report' !! -name 'allure-history*' ! -regex './[0-9]+' -exec rm -rf {} + || true
+          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} + || true
+          find allure-history -type d ! -name '202*' -exec rm -rf {} + || true
 
-      - name: List files after cleanup
-        run: ls -la
 
       - name: Copy latest Allure report to root
-        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .    
-
-      - name: List files after copying
-        run: ls -la
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
-            git status
           else
             echo "No changes to commit to gh-pages."
-            git status
           fi
 
       - name: Push changes using PAT
@@ -104,4 +91,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
