@@ -54,16 +54,12 @@ jobs:
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
-
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
-
-      - name: Copy latest Allure report to its timestamp directory
-        run: cp -r allure-history/${{ env.TIMESTAMP }}/* allure-history/${{ env.TIMESTAMP }}
 
       - name: Copy index.html to root
         run: cp allure-history/${{ env.TIMESTAMP }}/index.html .
@@ -73,6 +69,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
             git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
+            git commit -m "Update index.html"
           else
             echo "No changes to commit to gh-pages."
           fi
@@ -86,3 +83,4 @@ jobs:
         run: |
          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
          echo "Access the latest report at: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/"
+
