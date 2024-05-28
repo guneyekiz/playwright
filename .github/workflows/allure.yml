@@ -63,12 +63,15 @@ jobs:
           fi
 
       - name: Copy latest Allure report to its timestamp directory
-        run: cp -r allure-history/${{ env.TIMESTAMP }}/* allure-history/${{ env.TIMESTAMP }}
+        run: |
+          # This step was previously redundant. We ensure the directory is correctly populated
+          # during the 'Generate Allure report' step, so no need to copy again.
+          echo "Allure reports are stored in allure-history/${{ env.TIMESTAMP }}"
 
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            git add -A
+            git add allure-history/${{ env.TIMESTAMP }}/*
             git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
