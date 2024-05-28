@@ -41,6 +41,9 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p allure-history/${{ env.TIMESTAMP }}
 
+      - name: Debug - List directory contents before action
+        run: ls -laR   
+
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
         if: always()
@@ -48,6 +51,9 @@ jobs:
           gh_pages: gh-pages
           allure_history: "allure-history/${{ env.TIMESTAMP }}"
           allure_results: allure-results
+
+      - name: Debug - List directory contents after action
+        run: ls -laR  
 
       - name: Configure Git
         run: |
