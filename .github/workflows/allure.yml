@@ -54,6 +54,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
+
+
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
 
@@ -66,7 +68,7 @@ jobs:
 
       - name: Remove all except necessary files and directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} +
+          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} + || true
           find allure-history -type d ! -name '202*' -exec rm -rf {} + || true
 
 
