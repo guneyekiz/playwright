@@ -91,6 +91,9 @@ jobs:
       - name: Copy latest Allure report to root
         run: cp -r allure-history/* .
 
+      - name: Copy new timestamped Playwright report to gh-pages
+        run: cp -r ${{ steps.timestamp.outputs.timestamp }} .  
+
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
