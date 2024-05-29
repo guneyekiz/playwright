@@ -14,8 +14,10 @@ jobs:
       deployments: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout code and fetch gh-pages
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -39,13 +41,10 @@ jobs:
         run: sudo chmod -R u+w .
 
       - name: Load test report history
-        uses: actions/checkout@v4
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-      
+        run: |
+          git fetch origin gh-pages
+          git worktree add gh-pages gh-pages
+
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
         if: always()
@@ -56,10 +55,10 @@ jobs:
 
       - name: Generate timestamp
         id: timestamp
-        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
+        run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
 
       - name: Create timestamped directory for reports
-        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+        run: mkdir -p ${{ env.timestamp }}
 
       - name: Debug List playwright-report contents
         run: |
@@ -82,21 +81,20 @@ jobs:
           git config user.email "actions@github.com"
 
       - name: Ensure allure-history is writable
+        run: sudo chmod -R 777 allure-history
+
+      - name: Set permissions and stash all files to prevent checkout issues
         run: |
-          sudo chmod -R 777 allure-history
-
-      - name: Stash all files to prevent checkout issues
-        run: git stash push --package-lock.json package.json
-
-      - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages:gh-pages || true
+          sudo chmod -R 777 .
+          git stash push --include-untracked
 
       - name: Checkout gh-pages branch forcefully
         run: |
           git checkout -f gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
+          git reset --soft origin/gh-pages || true
+
+      - name: Unstash files
+        run: git stash pop || echo "No stash found."
 
       - name: Remove all except index.html and timestamped directories
         run: |
@@ -111,7 +109,7 @@ jobs:
       - name: Copy new timestamped Playwright report to gh-pages
         run: |
           if [ -d "temp-report" ] && [ "$(ls -A temp-report)" ]; then
-            cp -r temp-report/* ${{ steps.timestamp.outputs.timestamp }}
+            cp -r temp-report/* ${{ env.timestamp }}
           else
             echo "No files to copy from temp-report"
           fi
@@ -132,4 +130,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
