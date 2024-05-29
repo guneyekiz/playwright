@@ -1,6 +1,6 @@
 name: CI and Generate Timestamped Allure Report
 
-on:
+on: 
   push: 
     branches: [main]
   pull_request:
