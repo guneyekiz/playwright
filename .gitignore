@@ -6,3 +6,9 @@ node_modules/
 /allure-report
 /allure-results
 /playwright-results.json
+/allure-history/index.html
+/allure-history/last-history/categories-trend.json
+/allure-history/last-history/duration-trend.json
+/allure-history/last-history/history-trend.json
+/allure-history/last-history/history.json
+/allure-history/last-history/retry-trend.json
