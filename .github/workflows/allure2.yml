@@ -43,6 +43,8 @@ jobs:
       - name: Load test report history
         run: |
           git fetch origin gh-pages
+          git worktree prune
+          git worktree remove gh-pages || true
           git worktree add gh-pages gh-pages
 
       - name: Build Allure report
