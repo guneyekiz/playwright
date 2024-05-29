@@ -65,7 +65,6 @@ jobs:
       - name: Remove all except necessary files and directories
         run: |
           find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure*' ! -name '..' -exec rm -rf {} + || true
-          find allure-history -type d ! -name '202*' -exec rm -rf {} + || true
 
       - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
