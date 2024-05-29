@@ -1,69 +1,133 @@
-name: ci
+name: CI and Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main22]
+    branches: [ main ]
   pull_request:
-    branches: [ main1]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build:
-
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       deployments: write
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '20'
-        cache: 'npm' 
-    - run: npm ci
-    - run: npm install playwright@1.43.1
-    - name: Install browsers
-      run: npx playwright install
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Run Playwright tests
-      run: npx playwright test
-      continue-on-error: true
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-    - uses: actions/upload-artifact@master
-      with:
-        name: allure-results
-        path: allure-results
-        retention-days: 20
-        
-    - name: Get Allure history
-      uses: actions/checkout@v2
-      if: always()
-      continue-on-error: true
-      with:
-        ref: gh-pages
-        path: gh-pages
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Test marketplace action
-      uses: simple-elf/allure-report-action@master
-      if: always()
-      id: allure-report
-      with:
-        allure_results: allure-results
-        gh_pages: gh-pages
-        allure_report: allure-report
-        allure_history: allure-history
-        keep_reports: 20
+      - name: Install Playwright
+        run: npm install playwright@1.43.1
 
-    - name: Prepare index.html for deployment
-      run: |
-        mkdir temp-dir
-        cp allure-report/index.html temp-dir/index.html
+      - name: Install browsers
+        run: npx playwright install
 
-    - name: Deploy index.html to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v2
-      if: always()
-      env:
-        PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PUBLISH_BRANCH: gh-pages
-        PUBLISH_DIR: temp-dir
+      - name: Run Playwright tests
+        run: npx playwright test
+        continue-on-error: true
+
+      - name: Upload Allure results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-results
+          path: allure-results
+          retention-days: 20
+
+      - name: Get Allure history
+        uses: actions/checkout@v2
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Generate Allure report
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        id: allure-report
+        with:
+          allure_results: allure-results
+          gh_pages: gh-pages
+          allure_report: allure-report
+          allure_history: allure-history
+          keep_reports: 20
+
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
+
+      - name: Create timestamped directory for Playwright reports
+        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Zip Playwright report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+
+      - name: Upload Playwright report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+
+      - name: Copy Playwright report to timestamped directory
+        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Stash package files to prevent checkout issues
+        run: git stash push -- package-lock.json package.json
+
+      - name: Fetch gh-pages branch
+        run: git fetch origin gh-pages:gh-pages || true
+
+      - name: Checkout gh-pages branch
+        run: |
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
+
+      
+      - name: Copy latest Playwright report to root
+        run: |
+          cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No Playwright report found to copy."
+
+      - name: Deploy Allure report to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v2
+        env:
+          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_BRANCH: gh-pages
+          PUBLISH_DIR: allure-history
+
+      - name: Commit Playwright report to gh-pages
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy Playwright report ${GITHUB_SHA}"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
+        run: |
+          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+
+      - name: Output Allure report URL
+        run: |
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/"
