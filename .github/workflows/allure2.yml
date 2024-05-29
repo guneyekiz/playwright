@@ -50,21 +50,20 @@ jobs:
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
-
       - name: Create timestamped directory for reports
-        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+        run: mkdir -p report-${{ steps.timestamp.outputs.timestamp }}
 
       - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+        run: zip -r report-${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
       - name: Upload Playwright report as artifact
         uses: actions/upload-artifact@v3
         with:
           name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+          path: report-${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}    
+        run: cp -r playwright-report/* report-${{ steps.timestamp.outputs.timestamp }}
 
       - name: Configure Git
         run: |
@@ -83,16 +82,16 @@ jobs:
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
-       
+
       - name: Remove all except index.html and timestamped directories
         run: |
-         find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + ||true  
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'report-*' ! -name 'index.html' -exec rm -rf {} + || true  
 
       - name: Copy latest Allure report to root
         run: cp -r allure-history/* .
 
       - name: Copy new timestamped Playwright report to gh-pages
-        run: cp -r ${{ steps.timestamp.outputs.timestamp }} .  
+        run: cp -r report-${{ steps.timestamp.outputs.timestamp }} .
 
       - name: Commit Allure report to gh-pages
         run: |
@@ -110,4 +109,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
