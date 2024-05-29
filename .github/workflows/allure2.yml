@@ -1,15 +1,15 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push: 
-    branches: [main] 
+  push:
+    branches: [main]
   pull_request:
-    branches: [main] 
+    branches: [main]
 
-jobs: 
+jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       contents: write
       deployments: write
 
@@ -50,7 +50,6 @@ jobs:
         id: timestamp
         run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
 
-
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
@@ -64,7 +63,7 @@ jobs:
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}    
+        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Configure Git
         run: |
@@ -72,9 +71,12 @@ jobs:
           git config user.email "actions@github.com"
 
       - name: Change permissions for allure-history files
-        run: sudo chmod -R 777 allure-history    
+        run: |
+          if [ -d "allure-history" ]; then
+            sudo chmod -R 777 allure-history
+          fi
 
-      - name: Stash package files to prevent checkout issues
+      - name: Stash all files to prevent checkout issues
         run: git stash push --include-untracked
 
       - name: Fetch gh-pages branch
@@ -86,13 +88,19 @@ jobs:
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
-       
+
       - name: Remove all except index.html and timestamped directories
         run: |
-         find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + ||true  
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + || true
 
       - name: Copy latest Allure report to root
-        run: cp -r allure-history/* .
+        run: |
+          if [ -d "allure-history" ] && [ "$(ls -A allure-history)" ]; then
+            cp -r allure-history/* .
+          fi
+
+      - name: Copy new timestamped Playwright report to gh-pages
+        run: cp -r ${{ steps.timestamp.outputs.timestamp }} .
 
       - name: Commit Allure report to gh-pages
         run: |
@@ -110,4 +118,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
