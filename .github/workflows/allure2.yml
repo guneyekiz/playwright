@@ -53,19 +53,20 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
-
-      - name: Upload Playwright report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+      - name: Debug: List playwright-report contents
+        run: |
+          echo "Contents of playwright-report:"
+          ls -la playwright-report
 
       - name: Copy Playwright report to temporary directory
         run: |
           mkdir -p temp-report
           cp -r playwright-report/* temp-report
+
+      - name: Debug: List temp-report contents
+        run: |
+          echo "Contents of temp-report:"
+          ls -la temp-report
 
       - name: Configure Git
         run: |
@@ -81,7 +82,7 @@ jobs:
 
       - name: Checkout gh-pages branch forcefully
         run: |
-          git checkout gh-pages || git checkout --orphan gh-pages
+          git checkout -f gh-pages || git checkout --orphan gh-pages
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
@@ -97,7 +98,12 @@ jobs:
           fi
 
       - name: Copy new timestamped Playwright report to gh-pages
-        run: cp -r temp-report/* ${{ steps.timestamp.outputs.timestamp }}
+        run: |
+          if [ -d "temp-report" ] && [ "$(ls -A temp-report)" ]; then
+            cp -r temp-report/* ${{ steps.timestamp.outputs.timestamp }}
+          else
+            echo "No files to copy from temp-report"
+          fi
 
       - name: Commit Allure report to gh-pages
         run: |
