@@ -75,8 +75,12 @@ jobs:
           fi
           git branch  # Debugging output for branch checkout
 
-      - name: List directory after checkout and before pushing
-        run: ls -la    
+      - name: List content after checkout
+        run: |
+         ls -la
+         echo "Listing contents of allure-history:"
+         ls -la allure-history/
+
         
 
       - name: Copy latest Allure report to root
