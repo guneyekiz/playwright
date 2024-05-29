@@ -69,6 +69,10 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
+      - name: Ensure allure-history is writable
+        run: |
+          sudo chmod -R 777 allure-history    
+
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
 
