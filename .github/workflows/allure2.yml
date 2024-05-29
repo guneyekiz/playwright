@@ -76,8 +76,9 @@ jobs:
             sudo chmod -R 777 allure-history
           fi
 
-      - name: Stash all files to prevent checkout issues
-        run: git stash push --include-untracked
+      - name: Stash all files except allure-history to prevent checkout issues
+        run: |
+          git stash push --include-untracked -- ':!allure-history'
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
