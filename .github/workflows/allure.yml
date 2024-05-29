@@ -35,25 +35,22 @@ jobs:
         run: npx playwright test
         continue-on-error: true 
 
-        
-      - name: Generate timestamp
+      - name: Generate date stamp
         run: |
-          echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
-          echo "Generated TIMESTAMP: ${{ env.TIMESTAMP }}"
+          echo "DATESTAMP=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo "Generated DATESTAMP: ${{ env.DATESTAMP }}"
 
-
-      - name: Create timestamped directory for reports
+      - name: Create date stamped directory for reports
         run: |
-          mkdir -p allure-history/${{ env.TIMESTAMP }}
+          mkdir -p allure-history/${{ env.DATESTAMP }}
           ls -la allure-history/
-
 
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
         if: always()
         with:
           gh_pages: gh-pages
-          allure_history: "allure-history/${{ env.TIMESTAMP }}"
+          allure_history: "allure-history/${{ env.DATESTAMP }}"
           allure_results: allure-results
 
       - name: Configure Git
@@ -64,36 +61,23 @@ jobs:
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
         
-      - name: List directory before changes
-        run: ls -la
-
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
-          git branch  # Debugging output for branch checkout
-
-      - name: List content after checkout
-        run: |
-         ls -la
-         echo "Listing contents of allure-history:"
-         ls -la allure-history/
-
-        
 
       - name: Copy latest Allure report to root
         run: |
-          cp -r allure-history/${{ env.TIMESTAMP }}/* .
-        
+          cp -r allure-history/${{ env.DATESTAMP }}/* .
           ls -la # Debugging output for file copy
 
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
+            git commit -m "Deploy Allure report ${{ env.DATESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
           fi
@@ -104,9 +88,6 @@ jobs:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
         run: git push -u https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
 
-      - name: List directory after push
-        run: git pull && ls -la 
-
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.DATESTAMP }}"
