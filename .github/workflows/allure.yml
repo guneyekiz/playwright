@@ -4,7 +4,7 @@ on:
   push: 
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main] 
 
 jobs: 
   deploy:
@@ -24,24 +24,19 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        
-      - name: Install Playwright and Allure reporter
-        run: |
-          npm install playwright@1.43.1
-          npm install --save-dev @playwright/test allure-playwright
+
+      - name: Install Playwright
+        run: npm install playwright@1.43.1
 
       - name: Install browsers
         run: npx playwright install
 
-      - name: Run Playwright tests with Allure reporter
-        run: npx playwright test --reporter=line,allure-playwright
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=dot,json
         continue-on-error: true
 
-      - name: List test results
-        run: ls -la allure-results
-
-      - name: Setup Allure Commandline
-        run: sudo npm install -g allure-commandline
+      - name: Install Allure command line
+        run: npm install -g allure-commandline
 
       - name: Generate timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
@@ -50,7 +45,7 @@ jobs:
         run: mkdir -p allure-history/${{ env.TIMESTAMP }}
 
       - name: Generate Allure report
-        run: allure generate allure-results --clean -o allure-history/${{ env.TIMESTAMP }} || (echo "Allure generation failed" && exit 1)
+        run: allure generate --clean -o allure-history/${{ env.TIMESTAMP }}
 
       - name: Configure Git
         run: |
@@ -67,20 +62,19 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Update index.html paths
+      - name: Remove all except necessary files and directories
         run: |
-          sed -i 's|href="styles.css"|href="allure-history/${{ env.TIMESTAMP }}/styles.css"|g' allure-history/${{ env.TIMESTAMP }}/index.html
-          sed -i 's|src="app.js"|src="allure-history/${{ env.TIMESTAMP }}/app.js"|g' allure-history/${{ env.TIMESTAMP }}/index.html
+          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure-history' ! -name '..' -exec rm -rf {} + || true
+          find allure-history -type d ! -name '202*' -exec rm -rf {} + || true
 
-      - name: Copy index.html to root
-        run: cp allure-history/${{ env.TIMESTAMP }}/index.html .
+      - name: Copy latest Allure report to root
+        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
 
-      - name: Commit Allure report and index.html to gh-pages
+      - name: Commit Allure report to gh-pages
         run: |
-          git status --porcelain
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            git commit -m "Deploy Allure report and update index.html for ${{ env.TIMESTAMP }}"
+            git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
           fi
@@ -93,4 +87,3 @@ jobs:
       - name: Output Allure report URL
         run: |
           echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
-          echo "Access the latest report at: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/"
