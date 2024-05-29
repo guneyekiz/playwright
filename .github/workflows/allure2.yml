@@ -1,13 +1,12 @@
-name: CI and Deploy to GitHub Pages
+name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push:
-    branches: [ main, maidn ]
+  push: 
+    branches: [main]
   pull_request:
-    branches: [ main2, maine ]
-  workflow_dispatch:
+    branches: [main] 
 
-jobs:
+jobs: 
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -15,16 +14,19 @@ jobs:
       deployments: write
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - run: npm ci
-      - run: npm install playwright@1.43.1
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npm install playwright@1.43.1
 
       - name: Install browsers
         run: npx playwright install
@@ -33,38 +35,52 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: allure-results
-          path: allure-results
-          retention-days: 20
+      - name: Change permissions for files
+        run: sudo chmod -R u+w .
 
-      - name: Get Allure history
-        uses: actions/checkout@v2
+      - name: Build Allure report
+        uses: simple-elf/allure-report-action@v1.9
         if: always()
-        continue-on-error: true
         with:
-          ref: gh-pages
-          path: gh-pages
-
-      - name: Test marketplace action
-        uses: simple-elf/allure-report-action@master
-        if: always()
-        id: allure-report
-        with:
-          allure_results: allure-results
           gh_pages: gh-pages
-          allure_report: allure-report
-          allure_history: allure-history
-          keep_reports: 20
+          allure_history: "allure-history"
+          allure_results: allure-results
 
-      - name: Deploy Allure report to GitHub Pages
-        if: always()
-        uses: peaceiris/actions-gh-pages@v2
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Stash package files to prevent checkout issues
+        run: git stash push -- package-lock.json package.json
+
+      - name: Fetch gh-pages branch
+        run: git fetch origin gh-pages
+
+      - name: Checkout gh-pages branch
+        run: |
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
+
+      - name: Copy latest Allure report to root
+        run: cp -r allure-history/* .
+
+      - name: Commit Allure report to gh-pages
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "Deploy Allure report"
+          else
+            echo "No changes to commit to gh-pages."
+          fi
+
+      - name: Push changes using PAT
         env:
-          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: allure-history
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
+        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
-
-
+      - name: Output Allure report URL
+        run: |
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
