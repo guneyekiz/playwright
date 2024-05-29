@@ -2,9 +2,9 @@ name: CI and Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
-  pull_request: 
-    branches: [ main ]
+    branches: [ main, maidn ]
+  pull_request:
+    branches: [ main2, maine ]
   workflow_dispatch:
 
 jobs:
@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: true # Ensure submodules are checked out
 
       - name: Setup Node.js
         uses: actions/setup-node@v2
@@ -45,12 +47,11 @@ jobs:
           retention-days: 20
 
       - name: Get Allure history
-        uses: actions/checkout@v2
+        run: |
+          git submodule add -f <URL-to-your-allure-history-repo> allure-history
+          git submodule update --init --recursive
         if: always()
         continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
 
       - name: Generate Allure report
         uses: simple-elf/allure-report-action@master
@@ -100,7 +101,8 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      
+
+
       - name: Copy latest Playwright report to root
         run: |
           cp -r ${{ steps.timestamp.outputs.timestamp }}/* . || echo "No Playwright report found to copy."
