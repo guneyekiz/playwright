@@ -35,7 +35,8 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
-
+      - name: Change permissions for files
+        run: sudo chmod -R u+w .
 
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
@@ -61,8 +62,10 @@ jobs:
           name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
-      - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
+      - name: Copy Playwright report to temporary directory
+        run: |
+          mkdir -p temp-report
+          cp -r playwright-report/* temp-report
 
       - name: Configure Git
         run: |
@@ -71,16 +74,12 @@ jobs:
 
       - name: Ensure allure-history is writable
         run: |
-          sudo chmod -R 777 allure-history    
-
-      - name: Stash package files to prevent checkout issues
-        run: git stash push -- package-lock.json package.json
-
+          sudo chmod -R 777 allure-history
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
 
-      - name: Checkout gh-pages branch
+      - name: Checkout gh-pages branch forcefully
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
@@ -98,7 +97,7 @@ jobs:
           fi
 
       - name: Copy new timestamped Playwright report to gh-pages
-        run: cp -r ${{ steps.timestamp.outputs.timestamp }} .
+        run: cp -r temp-report/* ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Commit Allure report to gh-pages
         run: |
