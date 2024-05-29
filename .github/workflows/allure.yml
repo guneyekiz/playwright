@@ -35,15 +35,18 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
+        
       - name: Generate timestamp
-        run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
-        # Debugging output for timestamp
-        run: echo "Generated TIMESTAMP: ${{ env.TIMESTAMP }}"
+        run: |
+          echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
+          echo "Generated TIMESTAMP: ${{ env.TIMESTAMP }}"
+
 
       - name: Create timestamped directory for reports
-        run: mkdir -p allure-history/${{ env.TIMESTAMP }}
-        # Debugging output for directory creation
-        run: ls -la allure-history/
+        run: |
+          mkdir -p allure-history/${{ env.TIMESTAMP }}
+          ls -la allure-history/
+
 
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
@@ -67,13 +70,14 @@ jobs:
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
-        # Debugging output for branch checkout
-        run: git branch
+          git branch  # Debugging output for branch checkout
+        
 
       - name: Copy latest Allure report to root
-        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
-        # Debugging output for file copy
-        run: ls -la
+        run: |
+          cp -r allure-history/${{ env.TIMESTAMP }}/* .
+        
+          ls -la # Debugging output for file copy
 
       - name: Commit Allure report to gh-pages
         run: |
@@ -83,8 +87,7 @@ jobs:
           else
             echo "No changes to commit to gh-pages."
           fi
-        # Debugging output for commit status
-        run: git status
+          git status # Debugging output for commit status
 
       - name: Push changes using PAT
         env:
