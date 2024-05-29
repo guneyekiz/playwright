@@ -1,12 +1,12 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push: 
+  push:
     branches: [main]
-  pull_request: 
-    branches: [main] 
+  pull_request:
+    branches: [main]
 
-jobs: 
+jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -35,25 +35,6 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
-      - name: Generate timestamp
-        run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
-
-      - name: Create timestamped directory for reports
-        run: mkdir -p report/${{ env.TIMESTAMP }}
-
-      - name: Build Allure report
-        uses: simple-elf/allure-report-action@v1.9
-        if: always()
-        with:
-          gh_pages: gh-pages
-          allure_history: "report/${{ env.TIMESTAMP }}"
-          allure_results: allure-results
-
-      - name: Configure Git
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
 
@@ -64,6 +45,37 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
+      - name: Fetch existing reports
+        run: |
+          mkdir -p existing-reports
+          git clone --depth 1 --branch gh-pages https://${{ secrets.ACCESS_TOKEN2 }}@github.com/${{ github.repository }} existing-reports
+
+      - name: Generate timestamp
+        run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
+
+      - name: Create timestamped directory for reports
+        run: mkdir -p report/${{ env.TIMESTAMP }}
+
+      - name: Copy existing Allure history
+        run: |
+          if [ -d "existing-reports/report" ]; then
+            cp -r existing-reports/report/* report/${{ env.TIMESTAMP }}/history/
+          fi
+
+      - name: Build Allure report
+        uses: simple-elf/allure-report-action@v1.9
+        if: always()
+        with:
+          gh_pages: gh-pages
+          allure_history: "report/${{ env.TIMESTAMP }}"
+          allure_results: allure-results
+          keep_reports: 20
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
       - name: Remove all except necessary files and directories
         run: |
           find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'report' ! -name '..' -exec rm -rf {} + || true
@@ -72,8 +84,6 @@ jobs:
       - name: Copy latest Allure report to root
         run: cp -r report/${{ env.TIMESTAMP }}/* .
 
-
-        
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
