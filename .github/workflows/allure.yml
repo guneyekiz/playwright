@@ -1,14 +1,13 @@
-name: CI and Generate Allure Report
+name: CI and Generate Timestamped Allure Report
 
 on:
   push: 
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main] 
 
-
-jobs:
-  build-and-report:
+jobs: 
+  test-and-report:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -31,14 +30,8 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
-      - name: Install Allure command-line tool
-        run: sudo npm install -g allure-commandline
-
-      - name: Install Playwright Allure integration
-        run: npm install allure-playwright
-
-      - name: Run Playwright tests with Allure reporter
-        run: npx playwright test --reporter=dot,allure-playwright
+      - name: Run Playwright tests
+        run: npx playwright test
         continue-on-error: true
 
       - name: Generate timestamp
@@ -49,9 +42,12 @@ jobs:
         run: mkdir -p allure-results/${{ env.TIMESTAMP }}
 
       - name: Generate Allure report
-        run: allure generate allure-results --clean -o allure-report/${{ env.TIMESTAMP }}
+        uses: simple-elf/allure-report-action@v1.9
+        with:
+          results: allure-results
+          report: allure-report/${{ env.TIMESTAMP }}
 
-      - name: Archive Allure report
+      - name: Archive timestamped Allure report
         uses: actions/upload-artifact@v3
         with:
           name: allure-report-${{ env.TIMESTAMP }}
