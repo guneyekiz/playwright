@@ -25,29 +25,33 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright and Allure Playwright reporter
-        run: |
-          npm install playwright@1.43.1
-          npm install --save-dev allure-playwright
+      - name: Install Playwright
+        run: npm install playwright@1.43.1
 
       - name: Install browsers
         run: npx playwright install
 
-      - name: Run Playwright tests with Allure reporter
-        run: npx playwright test --reporter=allure-playwright
+      - name: Run Playwright tests
+        run: npx playwright test
         continue-on-error: true
-
-      - name: Install Allure command line
-        run: npm install -g allure-commandline
 
       - name: Generate timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
+        # Debugging output for timestamp
+        run: echo "Generated TIMESTAMP: ${{ env.TIMESTAMP }}"
 
       - name: Create timestamped directory for reports
         run: mkdir -p allure-history/${{ env.TIMESTAMP }}
+        # Debugging output for directory creation
+        run: ls -la allure-history/
 
-      - name: Generate Allure report
-        run: allure generate allure-results --clean -o allure-history/${{ env.TIMESTAMP }}
+      - name: Build Allure report
+        uses: simple-elf/allure-report-action@v1.9
+        if: always()
+        with:
+          gh_pages: gh-pages
+          allure_history: "allure-history/${{ env.TIMESTAMP }}"
+          allure_results: allure-results
 
       - name: Configure Git
         run: |
@@ -63,13 +67,13 @@ jobs:
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
-
-      - name: Remove all except necessary files and directories
-        run: |
-          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'allure*' ! -name '..' -exec rm -rf {} + || true
+        # Debugging output for branch checkout
+        run: git branch
 
       - name: Copy latest Allure report to root
         run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
+        # Debugging output for file copy
+        run: ls -la
 
       - name: Commit Allure report to gh-pages
         run: |
@@ -79,6 +83,8 @@ jobs:
           else
             echo "No changes to commit to gh-pages."
           fi
+        # Debugging output for commit status
+        run: git status
 
       - name: Push changes using PAT
         env:
@@ -87,4 +93,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
