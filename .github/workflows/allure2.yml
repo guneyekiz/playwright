@@ -88,13 +88,14 @@ jobs:
           sudo chmod -R 777 .
           git stash push --include-untracked
 
-      - name: Checkout gh-pages branch forcefully
+      - name: Checkout gh-pages branch
         run: |
-          git checkout -f gh-pages || git checkout --orphan gh-pages
-          git reset --soft origin/gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
 
-      - name: Unstash files
-        run: git stash pop || echo "No stash found."
+
 
       - name: Remove all except index.html and timestamped directories
         run: |
