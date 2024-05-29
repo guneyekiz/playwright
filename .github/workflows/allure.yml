@@ -1,17 +1,16 @@
-name: CI and Deploy Allure Report to GitHub Pages
+name: CI and Generate Allure Report
 
 on:
   push: 
     branches: [main]
   pull_request:
-    branches: [main] 
+    branches: [main]
 
-jobs: 
-  deploy:
+jobs:
+  build-and-report:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      deployments: write
 
     steps:
       - name: Checkout code
@@ -32,69 +31,20 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test
-        continue-on-error: true
+        run: npx playwright test --reporter=junit,allure
 
       - name: Generate timestamp
         id: timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
 
       - name: Create timestamped directory for reports
-        run: mkdir -p allure-history/${{ env.TIMESTAMP }}
+        run: mkdir -p allure-results/${{ env.TIMESTAMP }}
 
-      - name: Change permissions for files
-        run: sudo chmod -R u+w .
+      - name: Generate Allure report
+        run: allure generate allure-results --output allure-report/${{ env.TIMESTAMP }}
 
-      - name: Build Allure report
-        uses: simple-elf/allure-report-action@v1.9
-        if: always()
+      - name: Archive Allure report
+        uses: actions/upload-artifact@v3
         with:
-          gh_pages: gh-pages
-          allure_history: "allure-history/${{ env.TIMESTAMP }}"
-          allure_results: allure-results
-
-      - name: Print directory structure after report generation
-        run: ls -R allure-history/${{ env.TIMESTAMP }}
-
-      - name: Configure Git
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Stash package files to prevent checkout issues
-        run: git stash push -- package-lock.json package.json
-
-      - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages
-
-      - name: Checkout gh-pages branch
-        run: |
-          git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
-
-      - name: Remove all except index.html and timestamped directories
-        run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} + || true
-
-      - name: Copy latest Allure report to root
-        run: cp -r allure-history/${{ env.TIMESTAMP }}/* .
-
-      - name: Commit Allure report to gh-pages
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add -A
-            git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
-          else
-            echo "No changes to commit to gh-pages."
-          fi
-
-      - name: Push changes using PAT
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
-
-      - name: Output Allure report URL
-        run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.TIMESTAMP }}"
+          name: allure-report-${{ env.TIMESTAMP }}
+          path: allure-report/${{ env.TIMESTAMP }}
