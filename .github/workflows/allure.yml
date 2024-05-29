@@ -72,6 +72,9 @@ jobs:
       - name: Copy latest Allure report to root
         run: cp -r report/${{ env.TIMESTAMP }}/* .
 
+      - name: Copy index.html to allure-report
+        run: cp index.html allure-report/index.html  
+        
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
