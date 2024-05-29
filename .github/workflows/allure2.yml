@@ -38,6 +38,14 @@ jobs:
       - name: Change permissions for files
         run: sudo chmod -R u+w .
 
+      - name: Load test report history
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+      
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
         if: always()
@@ -76,6 +84,9 @@ jobs:
       - name: Ensure allure-history is writable
         run: |
           sudo chmod -R 777 allure-history
+
+      - name: Stash all files to prevent checkout issues
+        run: git stash push --package-lock.json package.json
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
