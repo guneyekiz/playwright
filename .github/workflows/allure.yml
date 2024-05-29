@@ -1,50 +1,33 @@
-name: Allure Report CI
+name: ci
 
 on:
   push:
-    branches: [ "main" ] 
-  pull_request: 
-    branches: [ "main" ]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      deployments: write
 
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
+    - uses: actions/checkout@v2
+    - name: Use Node.js
+      uses: actions/setup-node@v2
       with:
-        node-version: '20'
-
-    
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Install Playwright
-      run: npm install playwright@1.43.1    
-
-    - uses: browser-actions/setup-chrome@latest
-    - run: chrome --version
-
-    - name: Install browsers
-      run: npx playwright install
-
-
-    - name: Run Playwright tests
-      run: npx playwright test
-      continue-on-error: true
-
-    - uses: actions/upload-artifact@v3
+        node-version: '14'
+        cache: 'npm'
+    - run: npm ci
+    - run: npx playwright install@1.43.1
+    - run: npm test
+  
+    - uses: actions/upload-artifact@master
       with:
         name: allure-results
         path: allure-results
         retention-days: 20
-
+        
     - name: Get Allure history
       uses: actions/checkout@v2
       if: always()
@@ -52,7 +35,7 @@ jobs:
       with:
         ref: gh-pages
         path: gh-pages
-
+    
     - name: Test marketplace action
       uses: simple-elf/allure-report-action@master
       if: always()
@@ -70,4 +53,4 @@ jobs:
       env:
         PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PUBLISH_BRANCH: gh-pages
-        PUBLISH_DIR: gh-pages
+        PUBLISH_DIR: allure-history
