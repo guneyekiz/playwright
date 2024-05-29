@@ -35,8 +35,6 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
-      - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages
 
       - name: Checkout gh-pages branch
         run: |
@@ -45,10 +43,11 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Fetch existing reports
-        run: |
-          mkdir -p existing-reports
-          git clone --depth 1 --branch gh-pages https://${{ secrets.ACCESS_TOKEN2 }}@github.com/${{ github.repository }} existing-reports
+     
+      - name: Fetch gh-pages branch
+        run: git fetch origin gh-pages     
+
+      
 
       - name: Generate timestamp
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
@@ -56,11 +55,7 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p report/${{ env.TIMESTAMP }}
 
-      - name: Copy existing Allure history
-        run: |
-          if [ -d "existing-reports/report" ]; then
-            cp -r existing-reports/report/* report/${{ env.TIMESTAMP }}/history/
-          fi
+
 
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
@@ -69,7 +64,7 @@ jobs:
           gh_pages: gh-pages
           allure_history: "report/${{ env.TIMESTAMP }}"
           allure_results: allure-results
-          keep_reports: 20
+      
 
       - name: Configure Git
         run: |
