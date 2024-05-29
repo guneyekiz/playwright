@@ -25,14 +25,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright
-        run: npm install playwright@1.43.1
+      - name: Install Playwright and Allure Playwright reporter
+        run: |
+          npm install playwright@1.43.1
+          npm install --save-dev allure-playwright
 
       - name: Install browsers
         run: npx playwright install
 
-      - name: Run Playwright tests
-        run: npx playwright test --reporter=dot,json
+      - name: Run Playwright tests with Allure reporter
+        run: npx playwright test --reporter=allure-playwright
         continue-on-error: true
 
       - name: Install Allure command line
@@ -45,7 +47,7 @@ jobs:
         run: mkdir -p allure-history/${{ env.TIMESTAMP }}
 
       - name: Generate Allure report
-        run: allure generate --clean -o allure-history/${{ env.TIMESTAMP }}
+        run: allure generate allure-results --clean -o allure-history/${{ env.TIMESTAMP }}
 
       - name: Configure Git
         run: |
