@@ -102,7 +102,8 @@ jobs:
 
       - name: Remove all except index.html and timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + || true
+
 
       - name: Copy latest Playwright report to root
         run: |
