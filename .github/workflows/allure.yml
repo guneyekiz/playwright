@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '20'  # Ensure you are using the correct Node.js version
 
       - name: Install dependencies
         run: npm ci
@@ -44,11 +44,11 @@ jobs:
       - name: Generate Allure report
         uses: simple-elf/allure-report-action@v1.9
         with:
-          results: allure-results
-          report: allure-report/${{ env.TIMESTAMP }}
+          allure_results: allure-results  # Correct input name
+          allure_report: allure-report/${{ env.TIMESTAMP }}  # Correct input name
 
       - name: Archive timestamped Allure report
         uses: actions/upload-artifact@v3
         with:
           name: allure-report-${{ env.TIMESTAMP }}
-          path: allure-report/${{ env.TIMESTAMP }}
+          path: allure-report/${{ env.TIMESTAMP }}  # Ensure this path is correctly generated
