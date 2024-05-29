@@ -53,7 +53,7 @@ jobs:
       - name: Create timestamped directory for reports
         run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Debug: List playwright-report contents
+      - name: Debug List playwright-report contents
         run: |
           echo "Contents of playwright-report:"
           ls -la playwright-report
@@ -63,7 +63,7 @@ jobs:
           mkdir -p temp-report
           cp -r playwright-report/* temp-report
 
-      - name: Debug: List temp-report contents
+      - name: Debug List temp-report contents
         run: |
           echo "Contents of temp-report:"
           ls -la temp-report
