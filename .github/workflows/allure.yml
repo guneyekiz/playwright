@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [main]
 
+
 jobs:
   build-and-report:
     runs-on: ubuntu-latest
@@ -30,8 +31,14 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
-      - name: Run Playwright tests
-        run: npx playwright test --reporter=junit,allure
+      - name: Install Allure command-line tool
+        run: sudo npm install -g allure-commandline
+
+      - name: Install Playwright Allure integration
+        run: npm install allure-playwright
+
+      - name: Run Playwright tests with Allure reporter
+        run: npx playwright test --reporter=dot,allure-playwright
 
       - name: Generate timestamp
         id: timestamp
@@ -41,7 +48,7 @@ jobs:
         run: mkdir -p allure-results/${{ env.TIMESTAMP }}
 
       - name: Generate Allure report
-        run: allure generate allure-results --output allure-report/${{ env.TIMESTAMP }}
+        run: allure generate allure-results --clean -o allure-report/${{ env.TIMESTAMP }}
 
       - name: Archive Allure report
         uses: actions/upload-artifact@v3
