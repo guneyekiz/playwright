@@ -46,6 +46,26 @@ jobs:
           allure_history: "allure-history"
           allure_results: allure-results
 
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
+
+
+      - name: Create timestamped directory for reports
+        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
+
+      - name: Zip Playwright report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
+
+      - name: Upload Playwright report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+
+      - name: Copy Playwright report to timestamped directory
+        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}    
+
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
