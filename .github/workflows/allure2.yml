@@ -1,4 +1,4 @@
-name: CI and Deploy to GitHub Pages
+name: ci
 
 on:
   push:
@@ -15,20 +15,16 @@ jobs:
       deployments: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-      - name: Setup Node.js
+      - name: Use Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright
-        run: npm install playwright@1.43.1
+      - run: npm ci
+      - run: npm install playwright@1.43.1
 
       - name: Install browsers
         run: npx playwright install
@@ -37,8 +33,7 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
-      - name: Upload Allure results as artifact
-        uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3
         with:
           name: allure-results
           path: allure-results
@@ -52,7 +47,7 @@ jobs:
           ref: gh-pages
           path: gh-pages
 
-      - name: Generate Allure report
+      - name: Test marketplace action
         uses: simple-elf/allure-report-action@master
         if: always()
         id: allure-report
@@ -70,6 +65,7 @@ jobs:
           PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_BRANCH: gh-pages
           PUBLISH_DIR: allure-history
+
       - name: Generate timestamp
         id: timestamp
         run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
@@ -108,7 +104,6 @@ jobs:
         run: |
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + || true
 
-    
       - name: Commit Playwright report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
