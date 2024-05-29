@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [ main ] 
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -56,12 +56,14 @@ jobs:
         keep_reports: 20
 
     - name: Prepare index.html for deployment
-      run: mkdir deploy && cp allure-report/index.html deploy/index.html
+      run: |
+        mkdir temp-dir
+        cp allure-report/index.html temp-dir/index.html
 
-    - name: Deploy report to Github Pages
-      if: always()
+    - name: Deploy index.html to GitHub Pages
       uses: peaceiris/actions-gh-pages@v2
+      if: always()
       env:
         PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PUBLISH_BRANCH: gh-pages
-        PUBLISH_DIR: deploy
+        PUBLISH_DIR: temp-dir
