@@ -66,55 +66,5 @@ jobs:
           PUBLISH_BRANCH: gh-pages
           PUBLISH_DIR: allure-history
 
-      - name: Generate timestamp
-        id: timestamp
-        run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
 
-      - name: Create timestamped directory for Playwright reports
-        run: mkdir -p ${{ env.timestamp }}
 
-      - name: Zip Playwright report
-        run: zip -r ${{ env.timestamp }}/playwright-report.zip playwright-report/
-
-      - name: Upload Playwright report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: playwright-report-${{ env.timestamp }}
-          path: ${{ env.timestamp }}/playwright-report.zip
-
-      - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ env.timestamp }}
-
-      - name: Configure Git
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages:gh-pages || true
-
-      - name: Checkout gh-pages branch
-        run: |
-          git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
-
-      - name: Remove all except index.html and timestamped directories
-        run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + || true
-
-      - name: Commit Playwright report to gh-pages
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add -A
-            git commit -m "Deploy Playwright report ${GITHUB_SHA}"
-          else
-            echo "No changes to commit to gh-pages."
-          fi
-
-      - name: Push changes using PAT
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: |
-          git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
