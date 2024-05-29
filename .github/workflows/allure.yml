@@ -73,7 +73,8 @@ jobs:
         run: cp -r report/${{ env.TIMESTAMP }}/* .
 
       - name: Copy index.html to allure-report
-        run: cp index.html allure-report/index.html  
+        run: cp report/${{ env.TIMESTAMP }}/index.html allure-report/index.html
+
         
       - name: Commit Allure report to gh-pages
         run: |
