@@ -17,8 +17,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          submodules: true # Ensure submodules are checked out
 
       - name: Setup Node.js
         uses: actions/setup-node@v2
@@ -47,11 +45,12 @@ jobs:
           retention-days: 20
 
       - name: Get Allure history
-        run: |
-          git submodule add -f <URL-to-your-allure-history-repo> allure-history
-          git submodule update --init --recursive
+        uses: actions/checkout@v2
         if: always()
         continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
 
       - name: Generate Allure report
         uses: simple-elf/allure-report-action@master
@@ -101,7 +100,9 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-
+      - name: Remove all except index.html and timestamped directories
+        run: |
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} +
 
       - name: Copy latest Playwright report to root
         run: |
