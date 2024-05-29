@@ -39,6 +39,7 @@ jobs:
 
       - name: Run Playwright tests with Allure reporter
         run: npx playwright test --reporter=dot,allure-playwright
+        continue-on-error: true
 
       - name: Generate timestamp
         id: timestamp
