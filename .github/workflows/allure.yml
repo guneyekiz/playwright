@@ -63,6 +63,9 @@ jobs:
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
+        
+      - name: List directory before changes
+        run: ls -la
 
       - name: Checkout gh-pages branch
         run: |
@@ -71,6 +74,9 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
           git branch  # Debugging output for branch checkout
+
+      - name: List directory after checkout and before pushing
+        run: ls -la    
         
 
       - name: Copy latest Allure report to root
@@ -92,7 +98,10 @@ jobs:
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
+        run: git push -u https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
+
+      - name: List directory after push
+        run: git pull && ls -la 
 
       - name: Output Allure report URL
         run: |
