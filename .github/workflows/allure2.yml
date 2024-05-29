@@ -70,15 +70,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Change permissions for allure-history files
-        run: |
-          if [ -d "allure-history" ]; then
-            sudo chmod -R 777 allure-history
-          fi
-
-      - name: Stash all files except allure-history to prevent checkout issues
-        run: |
-          git stash push --include-untracked -- ':!allure-history'
+      - name: Clean untracked files
+        run: git clean -fdx
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
