@@ -2,7 +2,7 @@ name: CI and Deploy Allure Report to GitHub Pages
 
 on:
   push: 
-    branches: [main] 
+    branches: [main]
   pull_request:
     branches: [main] 
 
@@ -33,24 +33,20 @@ jobs:
 
       - name: Run Playwright tests
         run: npx playwright test
-        continue-on-error: true 
+        continue-on-error: true
 
-      - name: Generate date stamp
-        run: |
-          echo "DATESTAMP=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-          echo "Generated DATESTAMP: ${{ env.DATESTAMP }}"
+      - name: Generate timestamp
+        run: echo "TIMESTAMP=$(date +'%Y-%m-%d__%H%M%S')" >> $GITHUB_ENV
 
-      - name: Create date stamped directory for reports
-        run: |
-          mkdir -p allure-history/${{ env.DATESTAMP }}
-          ls -la allure-history/
+      - name: Create timestamped directory for reports
+        run: mkdir -p report/${{ env.TIMESTAMP }}
 
       - name: Build Allure report
         uses: simple-elf/allure-report-action@v1.9
         if: always()
         with:
           gh_pages: gh-pages
-          allure_history: "allure-history/${{ env.DATESTAMP }}"
+          allure_history: "report/${{ env.TIMESTAMP }}"
           allure_results: allure-results
 
       - name: Configure Git
@@ -60,7 +56,7 @@ jobs:
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
-        
+
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
@@ -68,26 +64,28 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Copy latest Allure report to root
+      - name: Remove all except necessary files and directories
         run: |
-          cp -r allure-history/${{ env.DATESTAMP }}/* .
-          ls -la # Debugging output for file copy
+          find . -maxdepth 1 ! -name '.' ! -name 'index.html' ! -name '.git' ! -name 'report' ! -name '..' -exec rm -rf {} + || true
+          find report -type d ! -name '202*' -exec rm -rf {} + || true
+
+      - name: Copy latest Allure report to root
+        run: cp -r report/${{ env.TIMESTAMP }}/* .
 
       - name: Commit Allure report to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            git commit -m "Deploy Allure report ${{ env.DATESTAMP }}"
+            git commit -m "Deploy Allure report ${{ env.TIMESTAMP }}"
           else
             echo "No changes to commit to gh-pages."
           fi
-          git status # Debugging output for commit status
 
       - name: Push changes using PAT
         env:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: git push -u https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
+        run: git push -fu https://${ACCESS_TOKEN}@github.com/${{ github.repository }} gh-pages
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/${{ env.DATESTAMP }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/report/${{ env.TIMESTAMP }}"
