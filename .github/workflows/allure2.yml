@@ -59,13 +59,6 @@ jobs:
       - name: Copy Allure report to timestamped directory
         run: cp -r allure-history/* reports/allure/${{ env.timestamp }}
 
-      - name: Create index.html for Allure report
-        run: |
-          echo '<html><body><h1>Allure Report</h1><a href="./index.html">View Report</a></body></html>' > reports/allure/${{ env.timestamp }}/index.html
-
-      - name: Create index.html for Playwright report
-        run: |
-          echo '<html><body><h1>Playwright Report</h1><a href="./index.html">View Report</a></body></html>' > reports/playwright/${{ env.timestamp }}/index.html
 
       - name: Configure Git
         run: |
