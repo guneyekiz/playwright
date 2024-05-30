@@ -53,6 +53,13 @@ jobs:
       - name: Copy Allure report to timestamped directory
         run: cp -r allure-report/* reports/allure/${{ env.timestamp }}
 
+
+      - name: Upload Playwright report artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: playwright-report-${{ env.timestamp }}
+          path: reports-playwright-${{ env.timestamp }}  
+
       # Add the following steps for archiving and uploading the Allure report
       - name: Archive Allure report
         run: zip -r allure-report-${{ env.timestamp }}.zip reports/allure/${{ env.timestamp }}
