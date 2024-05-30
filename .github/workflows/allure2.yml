@@ -32,11 +32,14 @@ jobs:
         run: npx playwright install
 
       - name: Clean Allure results directory
-        run: rm -rf allure-results && mkdir allure-results  
+        run: rm -rf allure-results && mkdir allure-results
 
       - name: Run Playwright tests
         run: npx playwright test
         continue-on-error: true 
+
+      - name: Clean Allure report directory
+        run: rm -rf allure-report && mkdir allure-report  
 
       - name: Generate Allure results
         run: npx allure generate allure-results --clean -o allure-report
