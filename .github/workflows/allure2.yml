@@ -4,7 +4,7 @@ on:
   push: 
     branches: [main]  
   pull_request:
-    branches: [main] 
+    branches: [main]
 
 jobs:
   deploy:
@@ -31,15 +31,12 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
-      - name: Clean Allure results directory
-        run: rm -rf allure-results && mkdir allure-results
+      - name: Clean Allure results and report directories
+        run: rm -rf allure-results allure-report && mkdir allure-results allure-report
 
       - name: Run Playwright tests
         run: npx playwright test
-        continue-on-error: true 
-
-      - name: Clean Allure report directory
-        run: rm -rf allure-report && mkdir allure-report  
+        continue-on-error: true
 
       - name: Generate Allure results
         run: npx allure generate allure-results --clean -o allure-report
@@ -57,7 +54,6 @@ jobs:
       - name: Copy Allure report to timestamped directory
         run: cp -r allure-report/* reports/allure/${{ env.timestamp }}
 
-
       - name: Upload Playwright Report Artifact
         uses: actions/upload-artifact@v3
         with:
@@ -68,9 +64,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Allure Report
-          path: reports/allure/${{ env.timestamp }}    
-
-
+          path: reports/allure/${{ env.timestamp }}
 
       - name: Configure Git
         run: |
@@ -110,7 +104,6 @@ jobs:
             </ul>
           </body>
           </html>' > index.html
-
 
       - name: Update Latest Allure Report
         run: |
