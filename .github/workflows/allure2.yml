@@ -38,9 +38,6 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
-      - name: Change permissions for files
-        run: sudo chmod -R u+w .
-
       - name: Generate Allure results
         run: npx allure generate allure-results --clean -o allure-report
 
