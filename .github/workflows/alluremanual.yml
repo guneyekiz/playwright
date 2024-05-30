@@ -4,9 +4,9 @@ on:
   push: 
     branches: [main]
   pull_request:
-    branches: [main] 
+    branches: [main]
 
-jobs: 
+jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '16'
 
       - name: Install dependencies
         run: npm ci
@@ -31,64 +31,49 @@ jobs:
       - name: Install browsers
         run: npx playwright install
 
-      - name: Run Playwright tests
-        run: npx playwright test --reporter=dot,json,allure
-        continue-on-error: true
-
-      - name: Create directory for reports
-        run: mkdir -p allure-history/current
-
-      - name: Change permissions for files
-        run: sudo chmod -R u+w .
-
+      - name: Run Playwright tests and generate Allure results
+        run: npx playwright test --reporter=allure
+      
       - name: Install Allure Commandline
-        run: sudo npm install -g allure-commandline
+        run: npm install -g allure-commandline
 
-      - name: Build Allure report manually
-        run: allure generate allure-results --clean -o allure-history/current
+      - name: Generate Allure report
+        run: allure generate allure-results --clean -o allure-report
 
-      - name: Print directory structure after report generation
-        run: ls -R allure-history/current
+      - name: Install HTTP Server for testing
+        run: npm install http-server
 
-      - name: Configure Git
+      - name: Test Allure Report Locally
+        run: |
+          npx http-server allure-report &
+          sleep 10
+          curl http://localhost:8080/index.html
+
+      - name: Fetch gh-pages branch
+        run: git fetch origin gh-pages --depth=1
+
+      - name: Checkout gh-pages branch
+        run: git checkout gh-pages || git checkout --orphan gh-pages
+
+      - name: Remove old files
+        run: git rm -rf . && mkdir allure-history
+
+      - name: Copy new Allure report files to gh-pages
+        run: cp -r ../allure-report/* allure-history/
+
+      - name: Commit changes
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          git add .
+          git commit -m "Deploy updated Allure report to GitHub Pages"
 
-      - name: Stash package files to prevent checkout issues
-        run: git stash push -- package-lock.json package.json
-
-      - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages
-
-      - name: Checkout gh-pages branch
-        run: |
-          git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
-
-      - name: Remove all except index.html and history directories
-        run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'allure-history' ! -name 'index.html' -exec rm -rf {} + || true
-
-      - name: Copy latest Allure report to root
-        run: cp -r allure-history/current/* .
-
-      - name: Commit Allure report to gh-pages
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            git add -A
-            git commit -m "Deploy Allure report"
-          else
-            echo "No changes to commit to gh-pages."
-          fi
-
-      - name: Push changes using PAT
-        env:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
-        run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
+      - name: Push changes to gh-pages
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
 
       - name: Output Allure report URL
-        run: |
+        run:  |
          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history/current"
