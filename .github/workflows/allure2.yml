@@ -49,7 +49,7 @@ jobs:
         run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
 
       - name: Create timestamped directory for reports
-        run: mkdir -p reports/${{ env.timestamp }}/playwright reports/${{ env.timestamp }}/allure
+        run: mkdir -p reports/${{ env.timestamp }}/allure reports/${{ env.timestamp }}/playwright
 
       - name: Copy Playwright report to timestamped directory
         run: cp -r playwright-report/* reports/${{ env.timestamp }}/playwright
@@ -79,9 +79,6 @@ jobs:
         run: |
           sudo chmod -R u+w . 
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true
-
-      - name: Copy reports to root
-        run: cp -r reports/* .
 
       - name: Create or Update Root index.html
         run: |
