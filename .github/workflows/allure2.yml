@@ -1,15 +1,15 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push: 
-    branches: [main] 
+  push:
+    branches: [main]
   pull_request:
-    branches: [main] 
+    branches: [main]
 
-jobs: 
+jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       contents: write
       deployments: write
 
@@ -48,23 +48,16 @@ jobs:
 
       - name: Generate timestamp
         id: timestamp
-        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
-
+        run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
 
       - name: Create timestamped directory for reports
-        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
-
-      - name: Zip Playwright report
-        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
-
-      - name: Upload Playwright report as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
-          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
+        run: mkdir -p reports/playwright/${{ env.timestamp }} reports/allure/${{ env.timestamp }}
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}    
+        run: cp -r playwright-report/* reports/playwright/${{ env.timestamp }}
+
+      - name: Copy Allure report to timestamped directory
+        run: cp -r allure-history/* reports/allure/${{ env.timestamp }}
 
       - name: Configure Git
         run: |
@@ -83,19 +76,19 @@ jobs:
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
           fi
-       
+
       - name: Remove all except index.html and timestamped directories
         run: |
-         find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + ||true  
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + ||true  
 
-      - name: Copy latest Allure report to root
-        run: cp -r allure-history/* .
+      - name: Copy reports to root
+        run: cp -r reports/* .
 
-      - name: Commit Allure report to gh-pages
+      - name: Commit Allure and Playwright reports to gh-pages
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             git add -A
-            git commit -m "Deploy Allure report"
+            git commit -m "Deploy reports"
           else
             echo "No changes to commit to gh-pages."
           fi
@@ -107,4 +100,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
+      
+      - name: Output Playwright report URL
+        run: |
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
