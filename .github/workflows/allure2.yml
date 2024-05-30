@@ -72,7 +72,10 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-   
+      - name: Remove all except index.html and reports directory
+        run: |
+          sudo chmod -R u+w . 
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'allure-results' ! -name 'playwright-results.json' !-name 'index.html' -exec rm -rf {} + || true
 
       - name: Create or Update Root index.html
         run: |
@@ -84,8 +87,8 @@ jobs:
           <body>
             <h1>Reports</h1>
             <ul>
-              <li><a href="reports/allure/latest/index.html">Latest Allure Report</a></li>
-              <li><a href="reports/playwright/latest/index.html">Latest Playwright Report</a></li>
+              <li><a href="reports/allure/latest">Latest Allure Report</a></li>
+              <li><a href="reports/playwright/latest">Latest Playwright Report</a></li>
             </ul>
           </body>
           </html>' > index.html
@@ -116,13 +119,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}/index.html"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}/index.html"
-
-      - name: Fix Allure Report Paths
-        run: |
-          find reports/allure/${{ env.timestamp }} -type f -name "*.html" -exec sed -i 's|href="|href="../reports/allure/${{ env.timestamp }}/|g' {} \;
-          find reports/allure/${{ env.timestamp }} -type f -name "*.html" -exec sed -i 's|src="|src="../reports/allure/${{ env.timestamp }}/|g' {} \;
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
