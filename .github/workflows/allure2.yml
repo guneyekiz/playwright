@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      deployments: write
 
     steps:
       - name: Checkout code
@@ -54,6 +53,16 @@ jobs:
       - name: Copy Allure report to timestamped directory
         run: cp -r allure-report/* reports/allure/${{ env.timestamp }}
 
+      # Add the following steps for archiving and uploading the Allure report
+      - name: Archive Allure report
+        run: zip -r allure-report-${{ env.timestamp }}.zip reports/allure/${{ env.timestamp }}
+
+      - name: Upload Allure report artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: allure-report-${{ env.timestamp }}
+          path: allure-report-${{ env.timestamp }}.zip
+
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
@@ -87,8 +96,8 @@ jobs:
           <body>
             <h1>Reports</h1>
             <ul>
-              <li><a href="reports/allure/latest">Latest Allure Report</a></li>
-              <li><a href="reports/playwright/latest">Latest Playwright Report</a></li>
+              <li><a href="reports/allure/latest/index.html">Latest Allure Report</a></li>
+              <li><a href="reports/playwright/latest/index.html">Latest Playwright Report</a></li>
             </ul>
           </body>
           </html>' > index.html
