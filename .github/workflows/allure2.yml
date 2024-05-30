@@ -71,7 +71,7 @@ jobs:
         run: git stash push -- package-lock.json package.json
 
       - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages
+        run: git fetch origin gh-pages:gh-pages
 
       - name: Checkout gh-pages branch
         run: |
