@@ -96,10 +96,23 @@ jobs:
             echo "No changes to commit to gh-pages."
           fi
 
+      - name: Check if Playwright report exists
+        id: check_playwright_report
+        run: |
+          if [ -d "playwright-report" ] && [ "$(ls -A playwright-report)" ]; then
+            echo "Playwright report exists"
+            echo "::set-output name=exists::true"
+          else
+            echo "Playwright report does not exist"
+            echo "::set-output name=exists::false"
+          fi
+
       - name: Copy Playwright report to timestamped directory
+        if: steps.check_playwright_report.outputs.exists == 'true'
         run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Commit Playwright report to gh-pages
+        if: steps.check_playwright_report.outputs.exists == 'true'
         run: |
           git add -A
           git commit -m "Deploy Playwright report"
