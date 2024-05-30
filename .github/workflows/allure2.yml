@@ -72,10 +72,7 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove all except index.html and reports directory
-        run: |
-          sudo chmod -R u+w . 
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true
+   
 
       - name: Create or Update Root index.html
         run: |
