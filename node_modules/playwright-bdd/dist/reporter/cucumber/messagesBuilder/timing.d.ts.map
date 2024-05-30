@@ -1,0 +1,1 @@
+{"version":3,"file":"timing.d.ts","sourceRoot":"","sources":["../../../../src/reporter/cucumber/messagesBuilder/timing.ts"],"names":[],"mappings":"AAKA,MAAM,MAAM,YAAY,GAAG;IACzB,SAAS,EAAE,IAAI,CAAC;IAChB,QAAQ,EAAE,MAAM,CAAC;CAClB,CAAC;AAEF,wBAAgB,mBAAmB,CAAC,IAAI,EAAE,MAAM,0CAE/C;AAED,wBAAgB,iBAAiB,CAAC,KAAK,EAAE,YAAY,EAAE;;;EActD"}
