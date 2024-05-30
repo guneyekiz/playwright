@@ -1,0 +1,5 @@
+"Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
+"failed","Thu May 30 04:39:36 UTC 2024","Thu May 30 04:39:42 UTC 2024","5412","chromium","example2.spec.ts","","","","has title",""
+"passed","Thu May 30 04:39:24 UTC 2024","Thu May 30 04:39:24 UTC 2024","593","chromium","example.spec.ts","","","","has title",""
+"passed","Thu May 30 04:39:24 UTC 2024","Thu May 30 04:39:25 UTC 2024","502","chromium","example.spec.ts","","","","get started link",""
+"passed","Thu May 30 04:39:42 UTC 2024","Thu May 30 04:39:43 UTC 2024","551","chromium","example2.spec.ts","","","","get started link",""
