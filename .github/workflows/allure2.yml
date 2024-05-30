@@ -102,11 +102,12 @@ jobs:
           <body>
             <h1>Reports</h1>
             <ul>
-              <li><a href="reports/allure/latest">Latest Allure Report</a></li>
-              <li><a href="reports/playwright/latest">Latest Playwright Report</a></li>
+              <li><a href="reports/allure/latest?timestamp=${{ env.timestamp }}">Latest Allure Report</a></li>
+              <li><a href="reports/playwright/latest?timestamp=${{ env.timestamp }}">Latest Playwright Report</a></li>
             </ul>
           </body>
           </html>' > index.html
+
 
       - name: Update Latest Allure Report
         run: |
