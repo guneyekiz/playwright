@@ -62,9 +62,7 @@ jobs:
         with:
           name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
-
-      - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}    
+  
 
       - name: Configure Git
         run: |
