@@ -1,7 +1,7 @@
-name: CI and Deploy Allure Report to GitHub Pages
+name: CI and Deploy Allure and Playwright Reports to GitHub Pages
 
 on:
-  push: 
+  push:
     branches: [main]
   pull_request:
     branches: [main]
@@ -59,6 +59,14 @@ jobs:
       - name: Copy Allure report to timestamped directory
         run: cp -r allure-history/* reports/allure/${{ env.timestamp }}
 
+      - name: Create index.html for Allure report
+        run: |
+          echo '<html><body><h1>Allure Report</h1><a href="./index.html">View Report</a></body></html>' > reports/allure/${{ env.timestamp }}/index.html
+
+      - name: Create index.html for Playwright report
+        run: |
+          echo '<html><body><h1>Playwright Report</h1><a href="./index.html">View Report</a></body></html>' > reports/playwright/${{ env.timestamp }}/index.html
+
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
@@ -79,10 +87,20 @@ jobs:
 
       - name: Remove all except index.html and timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + ||true  
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true  
 
       - name: Copy reports to root
         run: cp -r reports/* .
+
+      - name: Update Latest Allure Report
+        run: |
+          rm -f reports/allure/latest
+          ln -s ${env.timestamp} reports/allure/latest
+
+      - name: Update Latest Playwright Report
+        run: |
+          rm -f reports/playwright/latest
+          ln -s ${env.timestamp} reports/playwright/latest
 
       - name: Commit Allure and Playwright reports to gh-pages
         run: |
@@ -101,7 +119,7 @@ jobs:
       - name: Output Allure report URL
         run: |
          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
-      
+
       - name: Output Playwright report URL
         run: |
          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
