@@ -32,7 +32,7 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright tests
-        run: npx playwright test
+        run: npx playwright test --reporter=dot,json,allure
         continue-on-error: true
 
       - name: Create directory for reports
@@ -41,13 +41,8 @@ jobs:
       - name: Change permissions for files
         run: sudo chmod -R u+w .
 
-      - name: Build Allure report
-        uses: simple-elf/allure-report-action@v1.9
-        if: always()
-        with:
-          gh_pages: gh-pages
-          allure_history: "allure-history/current"
-          allure_results: allure-results
+      - name: Build Allure report manually
+        run: allure generate allure-results --clean -o allure-history/current
 
       - name: Print directory structure after report generation
         run: ls -R allure-history/current
