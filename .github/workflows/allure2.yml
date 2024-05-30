@@ -124,3 +124,8 @@ jobs:
       - name: Output Playwright report URL
         run: |
          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}/index.html"
+
+      - name: Verify Allure Report Paths
+        run: |
+          sed -i 's|href="|href="../reports/allure/${{ env.timestamp }}/|g' reports/allure/${{ env.timestamp }}/index.html
+          sed -i 's|src="|src="../reports/allure/${{ env.timestamp }}/|g' reports/allure/${{ env.timestamp }}/index.html
