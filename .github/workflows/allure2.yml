@@ -45,6 +45,12 @@ jobs:
       - name: Generate Allure results
         run: npx allure generate allure-results --clean -o allure-report
 
+      - name: Fix Allure report paths
+        run: |
+          find allure-report -name "*.html" -exec sed -i 's|src="|src="allure-report/|g' {} +
+          find allure-report -name "*.html" -exec sed -i 's|href="|href="allure-report/|g' {} +
+  
+
       - name: Generate timestamp
         id: timestamp
         run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
