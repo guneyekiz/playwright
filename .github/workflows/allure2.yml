@@ -87,8 +87,8 @@ jobs:
           <body>
             <h1>Reports</h1>
             <ul>
-              <li><a href="reports/allure/latest">Latest Allure Report</a></li>
-              <li><a href="reports/playwright/latest">Latest Playwright Report</a></li>
+              <li><a href="reports/allure/latest/index.html">Latest Allure Report</a></li>
+              <li><a href="reports/playwright/latest/index.html">Latest Playwright Report</a></li>
             </ul>
           </body>
           </html>' > index.html
@@ -119,8 +119,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}/index.html"
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}/index.html"
