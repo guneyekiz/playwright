@@ -41,6 +41,9 @@ jobs:
       - name: Generate Allure results
         run: npx allure generate allure-results --clean -o allure-report
 
+      - name: Verify Allure report generation
+        run: ls -la allure-report
+
       - name: Generate timestamp
         id: timestamp
         run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
@@ -53,6 +56,9 @@ jobs:
 
       - name: Copy Allure report to timestamped directory
         run: cp -r allure-report/* reports/allure/${{ env.timestamp }}
+
+      - name: Verify copied Allure report
+        run: ls -la reports/allure/${{ env.timestamp }}
 
       - name: Upload Playwright Report Artifact
         uses: actions/upload-artifact@v3
