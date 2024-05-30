@@ -38,26 +38,24 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
+      - name: Change permissions for files
+        run: sudo chmod -R u+w .
+
       - name: Generate Allure results
         run: npx allure generate allure-results --clean -o allure-report
-
-      - name: Fix Allure report paths
-        run: |
-          find allure-report -name "*.html" -exec sed -i 's|src="|src="./|g' {} +
-          find allure-report -name "*.html" -exec sed -i 's|href="|href="./|g' {} +
 
       - name: Generate timestamp
         id: timestamp
         run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
 
       - name: Create timestamped directory for reports
-        run: mkdir -p reports/playwright/${{ env.timestamp }} reports/allure/${{ env.timestamp }}
+        run: mkdir -p reports/${{ env.timestamp }}/playwright reports/${{ env.timestamp }}/allure
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* reports/playwright/${{ env.timestamp }}
+        run: cp -r playwright-report/* reports/${{ env.timestamp }}/playwright
 
       - name: Copy Allure report to timestamped directory
-        run: cp -r allure-report/* reports/allure/${{ env.timestamp }}
+        run: cp -r allure-report/* reports/${{ env.timestamp }}/allure
 
       - name: Configure Git
         run: |
@@ -77,7 +75,7 @@ jobs:
             git reset --soft origin/gh-pages || true
           fi
 
-      - name: Remove all except index.html and timestamped directories
+      - name: Remove all except index.html and reports directory
         run: |
           sudo chmod -R u+w . 
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true
@@ -95,21 +93,11 @@ jobs:
           <body>
             <h1>Reports</h1>
             <ul>
-              <li><a href="reports/allure/latest/index.html">Latest Allure Report</a></li>
-              <li><a href="reports/playwright/latest/index.html">Latest Playwright Report</a></li>
+              <li><a href="reports/${{ env.timestamp }}/allure">Latest Allure Report</a></li>
+              <li><a href="reports/${{ env.timestamp }}/playwright">Latest Playwright Report</a></li>
             </ul>
           </body>
           </html>' > index.html
-
-      - name: Update Latest Allure Report
-        run: |
-          rm -f reports/allure/latest
-          ln -s ${{ env.timestamp }} reports/allure/latest
-
-      - name: Update Latest Playwright Report
-        run: |
-          rm -f reports/playwright/latest
-          ln -s ${{ env.timestamp }} reports/playwright/latest
 
       - name: Commit Allure and Playwright reports to gh-pages
         run: |
@@ -127,8 +115,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}/index.html"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ env.timestamp }}/allure"
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}/index.html"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ env.timestamp }}/playwright"
