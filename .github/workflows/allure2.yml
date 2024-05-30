@@ -46,8 +46,8 @@ jobs:
 
       - name: Fix Allure report paths
         run: |
-          find allure-report -name "*.html" -exec sed -i 's|src="|src="allure-report/|g' {} +
-          find allure-report -name "*.html" -exec sed -i 's|href="|href="allure-report/|g' {} +
+          find allure-report -name "*.html" -exec sed -i 's|src="|src="./|g' {} +
+          find allure-report -name "*.html" -exec sed -i 's|href="|href="./|g' {} +
 
       - name: Generate timestamp
         id: timestamp
