@@ -1,9 +1,9 @@
 name: CI and Deploy Allure and Playwright Reports to GitHub Pages
 
 on:
-  push: 
+  push:
     branches: [main]
-  pull_request: 
+  pull_request:
     branches: [main]
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
         run: rm -rf allure-results && mkdir allure-results  
 
       - name: Run Playwright tests
-        run: npx playwright test
+        run: npx playwright test --reporter=line,html
         continue-on-error: true
 
       - name: Generate Allure results
@@ -53,14 +53,12 @@ jobs:
       - name: Copy Allure report to timestamped directory
         run: cp -r allure-report/* reports/allure/${{ env.timestamp }}
 
-
       - name: Upload Playwright report artifact
         uses: actions/upload-artifact@v2
         with:
           name: playwright-report-${{ env.timestamp }}
-          path: reports-playwright-${{ env.timestamp }}  
+          path: reports/playwright/${{ env.timestamp }}
 
-      # Add the following steps for archiving and uploading the Allure report
       - name: Archive Allure report
         run: zip -r allure-report-${{ env.timestamp }}.zip reports/allure/${{ env.timestamp }}
 
