@@ -1,23 +1,21 @@
 name: CI and Deploy Allure Report to GitHub Pages
 
 on:
-  push:
-    branches: [main]
+  push: 
+    branches: [main] 
   pull_request:
-    branches: [main]
+    branches: [main] 
 
-jobs:
+jobs: 
   deploy:
     runs-on: ubuntu-latest
-    permissions:
+    permissions: 
       contents: write
       deployments: write
 
     steps:
-      - name: Checkout code and fetch gh-pages
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -50,75 +48,48 @@ jobs:
 
       - name: Generate timestamp
         id: timestamp
-        run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
+        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
+
 
       - name: Create timestamped directory for reports
-        run: mkdir -p ${{ env.timestamp }}
+        run: mkdir -p ${{ steps.timestamp.outputs.timestamp }}
 
-      - name: Debug List playwright-report contents
-        run: |
-          echo "Contents of playwright-report:"
-          ls -la playwright-report
+      - name: Zip Playwright report
+        run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
-      - name: Copy Playwright report to temporary directory
-        run: |
-          mkdir -p temp-report
-          cp -r playwright-report/* temp-report
+      - name: Upload Playwright report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
+          path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip
 
-      - name: Debug List temp-report contents
-        run: |
-          echo "Contents of temp-report:"
-          ls -la temp-report
+      - name: Copy Playwright report to timestamped directory
+        run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}    
 
       - name: Configure Git
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Ensure allure-history is writable
-        run: sudo chmod -R 777 allure-history
-
-      - name: Set permissions and stash all files to prevent checkout issues
-        run: |
-          sudo chmod -R 777 .
-          git stash push --include-untracked
-
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
 
       - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages:gh-pages || true
+        run: git fetch origin gh-pages
 
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
-          git reset --soft origin/gh-pages || true
-
+          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
+            git reset --soft origin/gh-pages || true
+          fi
+       
       - name: Remove all except index.html and timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + || true
+         find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name '202*' ! -name 'index.html' -exec rm -rf {} + ||true  
 
       - name: Copy latest Allure report to root
-        run: |
-          if [ -d "allure-history" ] && [ "$(ls -A allure-history)" ]; then
-            echo "Copying allure-history to root..."
-            cp -r allure-history/* .
-            echo "Contents of root after copying allure-history:"
-            ls -la
-          else
-            echo "No allure-history directory or it is empty."
-          fi
-
-      - name: Copy new timestamped Playwright report to gh-pages
-        run: |
-          if [ -d "temp-report" ] && [ "$(ls -A temp-report)" ]; then
-            echo "Copying temp-report to ${{ env.timestamp }}..."
-            cp -r temp-report/* ${{ env.timestamp }}
-            echo "Contents of ${{ env.timestamp }} after copying temp-report:"
-            ls -la ${{ env.timestamp }}
-          else
-            echo "No files to copy from temp-report."
-          fi
+        run: cp -r allure-history/* .
 
       - name: Commit Allure report to gh-pages
         run: |
@@ -136,4 +107,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
