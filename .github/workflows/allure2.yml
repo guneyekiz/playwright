@@ -61,11 +61,7 @@ jobs:
           name: Playwright Report
           path: reports/playwright/${{ env.timestamp }}
 
-      - name: Upload Allure Report Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: Allure Report
-          path: reports/allure/${{ env.timestamp }}   
+
 
       - name: Configure Git
         run: |
