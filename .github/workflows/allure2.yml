@@ -93,6 +93,22 @@ jobs:
       - name: Copy reports to root
         run: cp -r reports/* .
 
+      - name: Create or Update Root index.html
+        run: |
+          echo '<!DOCTYPE html>
+          <html>
+          <head>
+            <title>Reports</title>
+          </head>
+          <body>
+            <h1>Reports</h1>
+            <ul>
+              <li><a href="reports/allure/latest">Latest Allure Report</a></li>
+              <li><a href="reports/playwright/latest">Latest Playwright Report</a></li>
+            </ul>
+          </body>
+          </html>' > index.html
+
       - name: Update Latest Allure Report
         run: |
           rm -f reports/allure/latest
@@ -119,8 +135,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
 
       - name: Output Playwright report URL
         run: |
-          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
