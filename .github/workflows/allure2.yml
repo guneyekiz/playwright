@@ -59,14 +59,12 @@ jobs:
           name: playwright-report-${{ env.timestamp }}
           path: reports/playwright/${{ env.timestamp }}
 
-      - name: Archive Allure report
-        run: zip -r allure-report-${{ env.timestamp }}.zip reports/allure/${{ env.timestamp }}
 
       - name: Upload Allure report artifact
         uses: actions/upload-artifact@v4
         with:
           name: allure-report-${{ env.timestamp }}
-          path: allure-report-${{ env.timestamp }}.zip
+          path: reports/allure/${{ env.timestamp }}
 
       - name: Configure Git
         run: |
