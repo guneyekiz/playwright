@@ -82,29 +82,17 @@ jobs:
         run: |
           sudo chmod -R 777 .
           git stash push --include-untracked
-       
+
       - name: Stash package files to prevent checkout issues
         run: git stash push -- package-lock.json package.json
 
-        # Fetch gh-pages branch to ensure it's locally available
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages:gh-pages || true
 
       - name: Checkout gh-pages branch
         run: |
           git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi   
-
-      - name: Checkout gh-pages branch
-        run: |
-          git checkout gh-pages || git checkout --orphan gh-pages
-          if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
-            git reset --soft origin/gh-pages || true
-          fi
-
-
+          git reset --soft origin/gh-pages || true
 
       - name: Remove all except index.html and timestamped directories
         run: |
@@ -113,15 +101,23 @@ jobs:
       - name: Copy latest Allure report to root
         run: |
           if [ -d "allure-history" ] && [ "$(ls -A allure-history)" ]; then
+            echo "Copying allure-history to root..."
             cp -r allure-history/* .
+            echo "Contents of root after copying allure-history:"
+            ls -la
+          else
+            echo "No allure-history directory or it is empty."
           fi
 
       - name: Copy new timestamped Playwright report to gh-pages
         run: |
           if [ -d "temp-report" ] && [ "$(ls -A temp-report)" ]; then
+            echo "Copying temp-report to ${{ env.timestamp }}..."
             cp -r temp-report/* ${{ env.timestamp }}
+            echo "Contents of ${{ env.timestamp }} after copying temp-report:"
+            ls -la ${{ env.timestamp }}
           else
-            echo "No files to copy from temp-report"
+            echo "No files to copy from temp-report."
           fi
 
       - name: Commit Allure report to gh-pages
@@ -140,4 +136,4 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/allure-history"
