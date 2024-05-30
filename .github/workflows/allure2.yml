@@ -101,18 +101,18 @@ jobs:
         run: |
           if [ -d "playwright-report" ] && [ "$(ls -A playwright-report)" ]; then
             echo "Playwright report exists"
-            echo "::set-output name=exists::true"
+            echo "exists=true" >> $GITHUB_ENV
           else
             echo "Playwright report does not exist"
-            echo "::set-output name=exists::false"
+            echo "exists=false" >> $GITHUB_ENV
           fi
 
       - name: Copy Playwright report to timestamped directory
-        if: steps.check_playwright_report.outputs.exists == 'true'
+        if: env.exists == 'true'
         run: cp -r playwright-report/* ${{ steps.timestamp.outputs.timestamp }}
 
       - name: Commit Playwright report to gh-pages
-        if: steps.check_playwright_report.outputs.exists == 'true'
+        if: env.exists == 'true'
         run: |
           git add -A
           git commit -m "Deploy Playwright report"
