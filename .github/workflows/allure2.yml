@@ -87,7 +87,8 @@ jobs:
 
       - name: Remove all except index.html and timestamped directories
         run: |
-          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true  
+          sudo chmod -R u+w . 
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true
 
       - name: Copy reports to root
         run: cp -r reports/* .
@@ -95,12 +96,12 @@ jobs:
       - name: Update Latest Allure Report
         run: |
           rm -f reports/allure/latest
-          ln -s ${env.timestamp} reports/allure/latest
+          ln -s ${{ env.timestamp }} reports/allure/latest
 
       - name: Update Latest Playwright Report
         run: |
           rm -f reports/playwright/latest
-          ln -s ${env.timestamp} reports/playwright/latest
+          ln -s ${{ env.timestamp }} reports/playwright/latest
 
       - name: Commit Allure and Playwright reports to gh-pages
         run: |
@@ -118,8 +119,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
+          echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
+          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
