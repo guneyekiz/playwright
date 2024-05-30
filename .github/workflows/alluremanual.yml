@@ -42,9 +42,7 @@ jobs:
         run: sudo chmod -R u+w .
 
       - name: Install Allure Commandline
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y allure
+        run: sudo npm install -g allure-commandline
 
       - name: Build Allure report manually
         run: allure generate allure-results --clean -o allure-history/current
