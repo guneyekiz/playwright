@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
 
-jobs: 
+jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -110,8 +110,15 @@ jobs:
         run: |
           allure_links=$(ls -d reports/allure/*/ | grep -v latest | sed 's|reports/allure/\(.*\)/|<li><a href="reports/allure/\1/index.html">\1</a></li>|')
           playwright_links=$(ls -d reports/playwright/*/ | grep -v latest | sed 's|reports/playwright/\(.*\)/|<li><a href="reports/playwright/\1/index.html">\1</a></li>|')
+          echo "Allure Links: $allure_links"
+          echo "Playwright Links: $playwright_links"
           echo "::set-output name=allure_links::$allure_links"
           echo "::set-output name=playwright_links::$playwright_links"
+
+      - name: Debugging Step: Print Generated Links
+        run: |
+          echo "Allure Links: ${{ steps.generate-links.outputs.allure_links }}"
+          echo "Playwright Links: ${{ steps.generate-links.outputs.playwright_links }}"
 
       - name: Create or Update Root index.html
         run: |
@@ -134,6 +141,9 @@ jobs:
             </ul>
           </body>
           </html>' > index.html
+
+      - name: Debugging Step: Print Updated index.html
+        run: cat index.html
 
       - name: Commit Allure and Playwright reports to gh-pages
         run: |
