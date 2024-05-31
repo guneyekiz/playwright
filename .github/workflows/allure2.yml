@@ -115,7 +115,7 @@ jobs:
           echo "::set-output name=allure_links::$allure_links"
           echo "::set-output name=playwright_links::$playwright_links"
 
-      - name: Debugging Step: Print Generated Links
+      - name: Debugging Print Generated Links
         run: |
           echo "Allure Links: ${{ steps.generate-links.outputs.allure_links }}"
           echo "Playwright Links: ${{ steps.generate-links.outputs.playwright_links }}"
@@ -142,7 +142,7 @@ jobs:
           </body>
           </html>' > index.html
 
-      - name: Debugging Step: Print Updated index.html
+      - name: Debugging Print Updated index.html
         run: cat index.html
 
       - name: Commit Allure and Playwright reports to gh-pages
