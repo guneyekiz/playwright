@@ -88,6 +88,7 @@ jobs:
           git checkout gh-pages || git checkout --orphan gh-pages
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
+          fi
 
       - name: Remove all except index.html and reports directory
         run: |
