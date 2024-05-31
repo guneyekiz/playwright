@@ -2,13 +2,13 @@ name: CI and Deploy Allure and Playwright Reports to GitHub Pages
 
 on:
   push:
-    branches: [main]   
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       deployments: write
@@ -92,7 +92,7 @@ jobs:
 
       - name: Remove all except index.html and reports directory
         run: |
-          sudo chmod -R u+w . 
+          sudo chmod -R u+w .
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true
 
       - name: Update Latest Allure Report
@@ -108,8 +108,8 @@ jobs:
       - name: Generate Report Links for index.html
         id: generate-links
         run: |
-          allure_links=$(find reports/allure/* -type d -printf "<li><a href='reports/allure/%P/index.html'>%P</a></li>\n")
-          playwright_links=$(find reports/playwright/* -type d -printf "<li><a href='reports/playwright/%P/index.html'>%P</a></li>\n")
+          allure_links=$(ls -d reports/allure/*/ | grep -v latest | sed 's|reports/allure/\(.*\)/|<li><a href="reports/allure/\1/index.html">\1</a></li>|')
+          playwright_links=$(ls -d reports/playwright/*/ | grep -v latest | sed 's|reports/playwright/\(.*\)/|<li><a href="reports/playwright/\1/index.html">\1</a></li>|')
           echo "::set-output name=allure_links::$allure_links"
           echo "::set-output name=playwright_links::$playwright_links"
 
@@ -125,12 +125,12 @@ jobs:
             <h2>Allure Reports</h2>
             <ul>
               <li><a href="reports/allure/latest/index.html">Latest Allure Report</a></li>
-              ${{ steps.generate-links.outputs.allure_links }}
+              '"${{ steps.generate-links.outputs.allure_links }}"'
             </ul>
             <h2>Playwright Reports</h2>
             <ul>
               <li><a href="reports/playwright/latest/index.html">Latest Playwright Report</a></li>
-              ${{ steps.generate-links.outputs.playwright_links }}
+              '"${{ steps.generate-links.outputs.playwright_links }}"'
             </ul>
           </body>
           </html>' > index.html
