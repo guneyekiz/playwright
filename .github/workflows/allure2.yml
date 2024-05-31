@@ -1,7 +1,7 @@
 name: CI and Deploy Allure and Playwright Reports to GitHub Pages
 
 on:
-  push: 
+  push:
     branches: [main]   
   pull_request:
     branches: [main]
@@ -88,12 +88,29 @@ jobs:
           git checkout gh-pages || git checkout --orphan gh-pages
           if [ "$(git rev-parse --abbrev-ref HEAD)" == "gh-pages" ]; then
             git reset --soft origin/gh-pages || true
-          fi
 
       - name: Remove all except index.html and reports directory
         run: |
           sudo chmod -R u+w . 
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true
+
+      - name: Update Latest Allure Report
+        run: |
+          rm -rf reports/allure/latest
+          cp -r reports/allure/${{ env.timestamp }} reports/allure/latest
+
+      - name: Update Latest Playwright Report
+        run: |
+          rm -rf reports/playwright/latest
+          cp -r reports/playwright/${{ env.timestamp }} reports/playwright/latest
+
+      - name: Generate Report Links for index.html
+        id: generate-links
+        run: |
+          allure_links=$(find reports/allure/* -type d -printf "<li><a href='reports/allure/%P/index.html'>%P</a></li>\n")
+          playwright_links=$(find reports/playwright/* -type d -printf "<li><a href='reports/playwright/%P/index.html'>%P</a></li>\n")
+          echo "::set-output name=allure_links::$allure_links"
+          echo "::set-output name=playwright_links::$playwright_links"
 
       - name: Create or Update Root index.html
         run: |
@@ -104,22 +121,18 @@ jobs:
           </head>
           <body>
             <h1>Reports</h1>
+            <h2>Allure Reports</h2>
             <ul>
-              <li><a href="reports/allure/latest?timestamp=${{ env.timestamp }}">Latest Allure Report</a></li>
-              <li><a href="reports/playwright/latest?timestamp=${{ env.timestamp }}">Latest Playwright Report</a></li>
+              <li><a href="reports/allure/latest/index.html">Latest Allure Report</a></li>
+              ${{ steps.generate-links.outputs.allure_links }}
+            </ul>
+            <h2>Playwright Reports</h2>
+            <ul>
+              <li><a href="reports/playwright/latest/index.html">Latest Playwright Report</a></li>
+              ${{ steps.generate-links.outputs.playwright_links }}
             </ul>
           </body>
           </html>' > index.html
-
-      - name: Update Latest Allure Report
-        run: |
-          rm -f reports/allure/latest
-          ln -s ${{ env.timestamp }} reports/allure/latest
-
-      - name: Update Latest Playwright Report
-        run: |
-          rm -f reports/playwright/latest
-          ln -s ${{ env.timestamp }} reports/playwright/latest
 
       - name: Commit Allure and Playwright reports to gh-pages
         run: |
@@ -137,8 +150,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}/index.html"
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}/index.html"
