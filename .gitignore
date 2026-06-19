@@ -12,3 +12,4 @@ node_modules/
 /allure-history/last-history/history-trend.json
 /allure-history/last-history/history.json
 /allure-history/last-history/retry-trend.json
+.claude/settings.local.json
