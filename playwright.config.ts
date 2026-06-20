@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -14,7 +15,11 @@ export default defineConfig({
   ],
 
   use: {
+    baseURL: process.env.BASE_URL,
     trace: 'on-first-retry',
+    launchOptions: {
+      slowMo: process.env.SLOWMO ? Number(process.env.SLOWMO) : 0,
+    },
   },
   projects: [
     {
