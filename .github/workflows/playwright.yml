@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -103,7 +103,7 @@ jobs:
         run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
       - name: Upload Playwright report as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip

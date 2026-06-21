@@ -30,10 +30,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
 
@@ -93,13 +93,13 @@ jobs:
         run: ls -la reports/allure/${{ env.timestamp }}
 
       - name: Upload Playwright Report Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Playwright Report
           path: reports/playwright/${{ env.timestamp }}
 
       - name: Upload Allure Report Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Allure Report
           path: reports/allure/${{ env.timestamp }}

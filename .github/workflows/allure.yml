@@ -20,9 +20,9 @@ jobs:
 
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Use Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: '20'
         cache: 'npm' 
@@ -37,14 +37,14 @@ jobs:
       continue-on-error: true
 
   
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: allure-results
         path: allure-results
         retention-days: 20
         
     - name: Get Allure history
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       if: always()
       continue-on-error: true
       with:
