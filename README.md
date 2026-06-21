@@ -1,6 +1,6 @@
 # playwright
 
-Playwright test automation suite for [the-internet.herokuapp.com](https://the-internet.herokuapp.com), a public QA practice site. Covers UI, API, and accessibility testing for the login flow, with Allure reporting and CI deployment to GitHub Pages.
+Playwright test automation suite for [the-internet.herokuapp.com](https://the-internet.herokuapp.com), a public QA practice site. Covers UI, API, and accessibility testing for the login flow, plus a growing catalog of the site's other example feature pages (tracked in [docs/app-exploration.md](docs/app-exploration.md)), with Allure reporting and CI deployment to GitHub Pages.
 
 ## Tech stack
 
@@ -17,6 +17,22 @@ tests/
   pages/
     BasePage.ts               base class: holds Page, exposes goto(path)
     LoginPage.ts               login page locators + actions
+    AbTestPage.ts              /abtest locators
+    AddRemoveElementsPage.ts   /add_remove_elements/ locators + actions
+    BasicAuthPage.ts           /basic_auth locators
+    BrokenImagesPage.ts        /broken_images locators + helpers
+  features/                  one spec per example page from docs/app-exploration.md
+    ab-test.spec.ts             A/B Testing (asserts on either heading variant — random by design)
+    add-remove-elements.spec.ts Add/Remove Elements
+    basic-auth.spec.ts          Basic Auth (valid/invalid creds via browser.newContext({ httpCredentials }))
+    broken-images.spec.ts       Broken Images
+  security/                  permanent regression specs for confirmed security findings (docs/app-exploration.md)
+    basic-auth.security.spec.ts          Basic Auth enumeration/failure behavior
+    cookies.security.spec.ts             session cookie flags (HttpOnly/SameSite/Secure)
+    headers.security.spec.ts             response security headers on /login
+    redirector.security.spec.ts          /redirector stays relative/same-origin
+    transport-and-error-pages.security.spec.ts  HTTPS enforcement + error-page leakage
+    xss-reflection.security.spec.ts      reflected-input encoding on the login form
   api/
     login.api.spec.ts          API-level tests against /authenticate
   accessibility/
@@ -40,7 +56,11 @@ Create `.env.dev` (and optionally `.env.qa`) in the repo root — both are gitig
 BASE_URL=https://the-internet.herokuapp.com
 TEST_USERNAME=...
 TEST_PASSWORD=...
+BASIC_AUTH_USERNAME=...
+BASIC_AUTH_PASSWORD=...
 ```
+
+`BASIC_AUTH_USERNAME`/`BASIC_AUTH_PASSWORD` are for `tests/features/basic-auth.spec.ts` and `tests/security/basic-auth.security.spec.ts` (the `/basic_auth` page's own documented demo credential, `admin`/`admin` — routed through env vars rather than hardcoded, per this repo's convention). For CI, these also need adding as secrets to both the `dev` and `qa` GitHub Environments alongside the existing `BASE_URL`/`TEST_USERNAME`/`TEST_PASSWORD`, or both basic-auth specs will fail in CI.
 
 `playwright.config.ts` also reads an optional `SLOWMO` (ms) to slow down headed runs for debugging.
 
@@ -66,4 +86,4 @@ A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `
 
 ## Working with Claude Code
 
-This repo has Claude Code subagents under `.claude/agents/`: `playwright-builder` (writes/edits tests and CI), `playwright-reviewer` (reviews changes), `playwright-manual-tester` (exploratory QA, no committed code). The usual flow is build → review: after `playwright-builder` makes a change, `playwright-reviewer` checks it before it's considered done. `playwright-builder.md` is the source of truth for this project's conventions — read it before making structural changes.
+This repo has Claude Code subagents under `.claude/agents/`: `playwright-builder` (writes/edits tests and CI), `playwright-reviewer` (reviews changes), `playwright-manual-tester` (exploratory QA, no committed code), `playwright-security-tester` (audits the repo/pipeline for security issues and writes permanent security regression specs under `tests/security/`). The usual flow is build → review: after `playwright-builder` (or `playwright-security-tester`) makes a change, `playwright-reviewer` checks it before it's considered done. `playwright-builder.md` is the source of truth for this project's conventions — read it before making structural changes.
