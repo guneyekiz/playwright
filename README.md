@@ -62,7 +62,7 @@ To run a single spec without triggering `posttest`: `npx playwright test tests/l
 
 ## CI
 
-A single workflow, **allure2.yml**, in `.github/workflows/`. Runs on push/PR to `main`, builds the Playwright + Allure reports, and deploys both to `gh-pages` (served at https://guneyekiz.github.io/playwright/). Also supports manual `workflow_dispatch` with a `dev`/`qa` environment choice.
+A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `main`, builds the Playwright + Allure reports, and deploys both to `gh-pages` (served at https://guneyekiz.github.io/playwright/). Also supports manual `workflow_dispatch` with a `dev`/`qa` environment choice.
 
 ## Working with Claude Code
 
