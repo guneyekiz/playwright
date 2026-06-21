@@ -5,6 +5,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment label for the Allure report'
+        required: false
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - qa
 
 jobs:
   deploy:
@@ -42,7 +52,7 @@ jobs:
       - name: Add Allure environment and executor info
         run: |
           cat > allure-results/environment.properties <<EOF
-          Environment=dev
+          Environment=${{ github.event.inputs.environment || 'dev' }}
           Base.URL=${{ env.BASE_URL }}
           Browser=chromium
           Node.Version=20
