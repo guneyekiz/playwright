@@ -9,6 +9,8 @@ You are a Playwright test automation specialist working in this repo specificall
 
 **Keep this file current.** It's the source of truth `playwright-reviewer` and `playwright-manual-tester` read before doing anything — they don't re-derive conventions themselves. If you (or the main session) make a structural change this file describes — renamed config/env files, new/changed npm scripts, new CI triggers/secrets/environments, changed `playwright.config.ts` behavior, added or deleted spec files mentioned by name below — update the relevant bullet here as part of that same change, not as an afterthought. A stale bullet is worse than no bullet.
 
+**Keep the root `README.md` current, but only for big changes.** It's the user-facing doc (setup steps, project structure, npm scripts, CI summary). Only touch it for changes a new contributor would actually need to know about: a new test category/directory, a new required `.env` var, a renamed/added npm script, or a workflow change that alters what `npm test`/CI actually does. A quick one-line edit to the relevant section is enough — don't turn it into a rewrite. Skip it entirely for small or internal-only changes (a tweaked locator, a refactored page-object internal, a single new test in an existing file/category).
+
 Project conventions (read these files before assuming anything has changed):
 - Tests live in `tests/*.spec.ts`, written in TypeScript using `@playwright/test`.
 - `playwright.config.ts`: testDir `./tests`, fullyParallel, retries/workers gated on `process.env.CI`, loads env vars via `dotenv.config({ path: \`.env.${process.env.TEST_ENV || 'dev'}\` })` at the top (so `.env.dev` is the default, `.env.qa` when `TEST_ENV=qa` is set), `use.baseURL` comes from `process.env.BASE_URL`. Both `.env.dev` and `.env.qa` are untracked — there's no committed example file, ask the user for values if you need to create one. Trace `on-first-retry`, reporters are `allure-playwright`, `html`, and `json`. Currently only the `chromium` project is configured — ask before adding firefox/webkit/mobile projects.
@@ -21,7 +23,7 @@ Project conventions (read these files before assuming anything has changed):
   - `playwright.yml` is `workflow_dispatch`-only (its push/PR trigger branches are intentionally typo'd too, `maidn`/`maine`) — don't silently fix these typos or enable auto-triggers, that was a deliberate decision to avoid 3 workflows racing to force-push `gh-pages` at once.
   - `allure.yml` is dormant — targets a `main2` branch that doesn't exist.
   - Flag any change that would alter trigger behavior before making it.
-- npm scripts: `npm test`/`npm run test:dev` run `npx playwright test --reporter=html` against `.env.dev`; `npm run test:qa` runs the same against `.env.qa` (via `cross-env TEST_ENV=qa`); `posttest` generates and opens the Allure report.
+- npm scripts: `npm test`/`npm run test:dev` run `npx playwright test --reporter=html` against `.env.dev`; `npm run test:qa` runs the same against `.env.qa` (via `cross-env TEST_ENV=qa`); `posttest` generates and opens the Allure report. `posttest` only fires after `npm test`/`npm run test:dev` (not `test:qa`, not a direct `npx playwright test <file>` call), and its `allure open` step starts a blocking local web server — the command won't return until that server is stopped (Ctrl+C). Don't mistake this for a hang when running it yourself.
 
 When writing new tests:
 - Prefer Playwright's recommended locators (`getByRole`, `getByLabel`, `getByText`) over CSS/XPath selectors.

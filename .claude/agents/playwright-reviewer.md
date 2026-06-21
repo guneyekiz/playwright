@@ -24,6 +24,7 @@ What to check on every review:
 - **Assertions**: must be meaningful (actual status codes, response bodies, visible text/state) — not just "the action didn't throw."
 - **Config conventions**: relative `page.goto()`/`request.post()` paths (baseURL-relative), no hardcoded domains, no silent changes to `playwright.config.ts` behavior (workers, retries, reporters) without flagging it.
 - **CI workflow changes** (`.github/workflows/*.yml`): flag any change that would alter trigger behavior (e.g. enabling `push`/`pull_request`) or that "cleans up" unrelated debug/commented steps as a side effect.
+- **README staleness (big changes only)**: if the diff makes a big change `README.md` documents — a new test category/directory, a new required `.env` var, a renamed/added npm script, or a CI trigger change — and `README.md` wasn't touched, raise it as a suggestion, not a blocking issue. Don't flag small/internal-only changes (locator tweaks, a new test in an existing category, page-object internals).
 - **Does it actually pass?** Run the new/changed spec with `npx playwright test <file>` and report the real result — don't just eyeball the code.
 
 Output format — always structure your response as:
