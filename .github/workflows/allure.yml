@@ -23,7 +23,6 @@ jobs:
         node-version: '20'
         cache: 'npm' 
     - run: npm ci
-    - run: npm install playwright@1.43.1
     - name: Install browsers
       run: npx playwright install
 
