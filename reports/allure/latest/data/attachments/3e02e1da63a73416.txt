@@ -1,0 +1,66 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: api/login.api.spec.ts >> Login API (/authenticate) >> invalid credentials land on /login with error flash message
+- Location: tests/api/login.api.spec.ts:36:7
+
+# Error details
+
+```
+TypeError: apiRequestContext.post: Invalid URL
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | 
+  3  | const ENDPOINT = '/authenticate';
+  4  | const VALID_CREDENTIALS = { username: process.env.TEST_USERNAME!, password: process.env.TEST_PASSWORD! };
+  5  | const INVALID_CREDENTIALS = { username: process.env.TEST_USERNAME!, password: 'wrongpassword' };
+  6  | 
+  7  | test.describe('Login API (/authenticate)', () => {
+  8  |   test('valid credentials redirect to /secure', async ({ request }) => {
+  9  |     const response = await request.post(ENDPOINT, {
+  10 |       form: VALID_CREDENTIALS,
+  11 |       maxRedirects: 0,
+  12 |     });
+  13 | 
+  14 |     expect(response.status()).toBe(303);
+  15 |     expect(response.headers()['location']).toContain('/secure');
+  16 |   });
+  17 | 
+  18 |   test('valid credentials land on /secure with success flash message', async ({ request }) => {
+  19 |     const response = await request.post(ENDPOINT, { form: VALID_CREDENTIALS });
+  20 | 
+  21 |     expect(response.status()).toBe(200);
+  22 |     expect(response.url()).toContain('/secure');
+  23 |     expect(await response.text()).toContain('You logged into a secure area!');
+  24 |   });
+  25 | 
+  26 |   test('invalid credentials redirect to /login', async ({ request }) => {
+  27 |     const response = await request.post(ENDPOINT, {
+  28 |       form: INVALID_CREDENTIALS,
+  29 |       maxRedirects: 0,
+  30 |     });
+  31 | 
+  32 |     expect(response.status()).toBe(303);
+  33 |     expect(response.headers()['location']).toContain('/login');
+  34 |   });
+  35 | 
+  36 |   test('invalid credentials land on /login with error flash message', async ({ request }) => {
+> 37 |     const response = await request.post(ENDPOINT, { form: INVALID_CREDENTIALS });
+     |                                    ^ TypeError: apiRequestContext.post: Invalid URL
+  38 | 
+  39 |     expect(response.status()).toBe(200);
+  40 |     expect(response.url()).toContain('/login');
+  41 |     expect(await response.text()).toContain('Your password is invalid!');
+  42 |   });
+  43 | });
+  44 | 
+```
