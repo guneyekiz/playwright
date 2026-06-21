@@ -39,6 +39,26 @@ jobs:
         run: npx playwright test
         continue-on-error: true
 
+      - name: Add Allure environment and executor info
+        run: |
+          cat > allure-results/environment.properties <<EOF
+          Environment=dev
+          Base.URL=${{ env.BASE_URL }}
+          Browser=chromium
+          Node.Version=20
+          OS=ubuntu-latest
+          EOF
+          cat > allure-results/executor.json <<EOF
+          {
+            "name": "GitHub Actions",
+            "type": "github",
+            "buildOrder": ${{ github.run_number }},
+            "buildName": "Run #${{ github.run_number }}",
+            "buildUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "reportName": "Allure Report"
+          }
+          EOF
+
       - name: Generate Allure results
         run: npx allure generate allure-results --clean -o allure-report
 
