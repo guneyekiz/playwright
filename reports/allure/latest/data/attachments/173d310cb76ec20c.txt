@@ -1,0 +1,96 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: accessibility/login.a11y.spec.ts >> login flow accessibility >> login page meets accessibility threshold (Lighthouse)
+- Location: tests/accessibility/login.a11y.spec.ts:18:7
+
+# Error details
+
+```
+Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+Call log:
+  - navigating to "/login", waiting until "load"
+
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect, chromium } from '@playwright/test';
+  2  | import AxeBuilder from '@axe-core/playwright';
+  3  | import { LoginPage } from '../pages/LoginPage';
+  4  | 
+  5  | // playwright-lighthouse is published as an ESM-only package, but this project's
+  6  | // TS files are transpiled to CommonJS, so it must be brought in via a dynamic
+  7  | // import() inside the test rather than a static `import` (which would emit a
+  8  | // `require()` call and fail at module load time).
+  9  | async function getPlayAudit() {
+  10 |   const { playAudit } = await import('playwright-lighthouse');
+  11 |   return playAudit;
+  12 | }
+  13 | 
+  14 | const TEST_USERNAME = process.env.TEST_USERNAME!;
+  15 | const TEST_PASSWORD = process.env.TEST_PASSWORD!;
+  16 | 
+  17 | test.describe('login flow accessibility', () => {
+  18 |   test('login page meets accessibility threshold (Lighthouse)', async ({}, testInfo) => {
+  19 |     // playAudit() attaches over the Chrome DevTools Protocol, so this launches its own
+  20 |     // chromium instance with a debugging port instead of using the default `page` fixture.
+  21 |     // The port is derived from testInfo.parallelIndex (unique per running worker) so it
+  22 |     // stays collision-free if another Lighthouse-based spec ever runs concurrently.
+  23 |     const cdpPort = 9222 + testInfo.parallelIndex;
+  24 |     const browser = await chromium.launch({
+  25 |       args: [`--remote-debugging-port=${cdpPort}`],
+  26 |     });
+  27 | 
+  28 |     try {
+  29 |       const playAudit = await getPlayAudit();
+  30 |       const context = await browser.newContext({ baseURL: process.env.BASE_URL });
+  31 |       const page = await context.newPage();
+> 32 |       await page.goto('/login');
+     |                  ^ Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+  33 | 
+  34 |       await playAudit({
+  35 |         page,
+  36 |         port: cdpPort,
+  37 |         thresholds: {
+  38 |           // Measured accessibility score for this page is 87 (the-internet.herokuapp.com
+  39 |           // is a public demo site we don't control). Threshold set with headroom below
+  40 |           // the real measured score so the test still catches regressions.
+  41 |           accessibility: 80,
+  42 |         },
+  43 |       });
+  44 |     } finally {
+  45 |       await browser.close();
+  46 |     }
+  47 |   });
+  48 | 
+  49 |   // Lighthouse's navigation-based audit runs in its own isolated browser context and
+  50 |   // doesn't carry over the Playwright session cookie, so it can't reach an authenticated
+  51 |   // page like /secure (it silently redirects back to /login instead). axe-core audits the
+  52 |   // DOM that's already rendered in the live `page` with no re-navigation, so it works here.
+  53 |   test('secure page has no new accessibility violations (axe-core)', async ({ page }) => {
+  54 |     const loginPage = new LoginPage(page);
+  55 |     await loginPage.goto();
+  56 |     await loginPage.login(TEST_USERNAME, TEST_PASSWORD);
+  57 |     await page.waitForURL(/\/secure$/);
+  58 | 
+  59 |     const results = await new AxeBuilder({ page }).analyze();
+  60 | 
+  61 |     expect(results.violations.filter((v) => v.impact === 'critical')).toEqual([]);
+  62 |     // Measured baseline for this page is 5 violations (1 serious color-contrast, 4 moderate
+  63 |     // heading/landmark issues) on a public demo site we don't control. Asserting against
+  64 |     // that baseline catches regressions without requiring the site to be pixel-perfect.
+  65 |     expect(
+  66 |       results.violations.length,
+  67 |       JSON.stringify(results.violations.map((v) => ({ id: v.id, impact: v.impact })))
+  68 |     ).toBeLessThanOrEqual(5);
+  69 |   });
+  70 | });
+  71 | 
+```
