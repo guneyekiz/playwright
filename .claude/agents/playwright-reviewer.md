@@ -25,6 +25,7 @@ What to check on every review:
 - **Config conventions**: relative `page.goto()`/`request.post()` paths (baseURL-relative), no hardcoded domains, no silent changes to `playwright.config.ts` behavior (workers, retries, reporters) without flagging it.
 - **CI workflow changes** (`.github/workflows/*.yml`): flag any change that would alter trigger behavior (e.g. enabling `push`/`pull_request`) or that "cleans up" unrelated debug/commented steps as a side effect.
 - **README staleness (big changes only)**: if the diff makes a big change `README.md` documents — a new test category/directory, a new required `.env` var, a renamed/added npm script, or a CI trigger change — and `README.md` wasn't touched, raise it as a suggestion, not a blocking issue. Don't flag small/internal-only changes (locator tweaks, a new test in an existing category, page-object internals).
+- **Security-sensitive changes**: if the diff adds a dependency, touches `.github/workflows/*.yml` permissions/triggers, or changes how secrets/credentials are handled, do the basic check yourself (per the hardcoded-credentials rule above) but also suggest a pass from `playwright-security-tester` for the deeper audit (CI injection risk, dependency advisories, supply-chain pinning) — that's its job, not a full duplicate of this checklist.
 - **Does it actually pass?** Run the new/changed spec with `npx playwright test <file>` and report the real result — don't just eyeball the code.
 
 Output format — always structure your response as:
