@@ -1,7 +1,6 @@
 node_modules/
 .env
-.env.example
-.env.qa
+.env.*
 /test-results/
 /playwright-report/
 /blob-report/
