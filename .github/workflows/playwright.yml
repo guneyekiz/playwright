@@ -5,7 +5,7 @@ on:
   push:
     branches: [maidn]
   pull_request:
-    branches: [maine] 
+    branches: [maine]
   workflow_dispatch:  
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -92,7 +92,7 @@ jobs:
       
       - name: Generate timestamp
         id: timestamp
-        run: echo "::set-output name=timestamp::$(date +%Y-%m-%d__%H%M%S)"
+        run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> "$GITHUB_OUTPUT"
 
 
       - name: Create timestamped directory for reports
@@ -102,7 +102,7 @@ jobs:
         run: zip -r ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip playwright-report/
 
       - name: Upload Playwright report as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ steps.timestamp.outputs.timestamp }}
           path: ${{ steps.timestamp.outputs.timestamp }}/playwright-report.zip

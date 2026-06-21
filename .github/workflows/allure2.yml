@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
@@ -61,13 +61,13 @@ jobs:
         run: ls -la reports/allure/${{ env.timestamp }}
 
       - name: Upload Playwright Report Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Playwright Report
           path: reports/playwright/${{ env.timestamp }}
 
       - name: Upload Allure Report Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Allure Report
           path: reports/allure/${{ env.timestamp }}
@@ -112,8 +112,12 @@ jobs:
           playwright_links=$(ls -d reports/playwright/*/ | grep -v latest | sed 's|reports/playwright/\(.*\)/|<li><a href="reports/playwright/\1/index.html">\1</a></li>|')
           echo "Allure Links: $allure_links"
           echo "Playwright Links: $playwright_links"
-          echo "::set-output name=allure_links::$allure_links"
-          echo "::set-output name=playwright_links::$playwright_links"
+          echo "allure_links<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$allure_links" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "playwright_links<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$playwright_links" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Debugging Print Generated Links
         run: |
