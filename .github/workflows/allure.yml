@@ -13,6 +13,10 @@ jobs:
     permissions:
      contents: write
      deployments: write
+    env:
+     BASE_URL: ${{ secrets.BASE_URL }}
+     TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+     TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
 
 
     steps:
