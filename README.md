@@ -86,4 +86,14 @@ A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `
 
 ## Working with Claude Code
 
-This repo has Claude Code subagents under `.claude/agents/`: `playwright-builder` (writes/edits tests and CI), `playwright-reviewer` (reviews changes), `playwright-manual-tester` (exploratory QA, no committed code), `playwright-security-tester` (audits the repo/pipeline for security issues and writes permanent security regression specs under `tests/security/`). The usual flow is build → review: after `playwright-builder` (or `playwright-security-tester`) makes a change, `playwright-reviewer` checks it before it's considered done. `playwright-builder.md` is the source of truth for this project's conventions — read it before making structural changes.
+This repo has Claude Code subagents under `.claude/agents/`, each with a narrow, non-overlapping scope:
+
+- `playwright-builder` — writes/edits specs and page objects, fixes flaky tests.
+- `playwright-devops` — owns `.github/workflows/*.yml`, report generation, and `gh-pages` deployment.
+- `playwright-security-tester` — audits the repo/pipeline for security issues and writes permanent regression specs under `tests/security/`.
+- `playwright-accessibility-tester` — audits UI changes for accessibility impact and writes permanent regression specs under `tests/accessibility/`.
+- `playwright-reviewer` — reviews changes from any of the above for correctness and convention adherence. Read-only.
+- `playwright-manual-tester` — exploratory QA against the live app, no committed code.
+- `playwright-manager` — maintains the agent system itself: checks for overlap/staleness between the agents above and keeps their docs consistent. Invoked on demand, not automatically.
+
+The usual flow is build → review: after a builder-type agent makes a change, `playwright-reviewer` checks it before it's considered done. `.claude/agents/CONVENTIONS.md` is the shared source of truth for this project's conventions — every agent reads it first; read it yourself before making structural changes.
