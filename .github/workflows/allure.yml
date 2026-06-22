@@ -5,6 +5,15 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Scheduled smoke run, every morning. GitHub Actions cron is UTC-only and cannot read
+  # workflow_dispatch inputs, so this is a second, separate trigger from the manual one below.
+  # 0 12 * * * = 07:00 EST / 08:00 EDT. US Eastern observes DST roughly 8 of 12 months
+  # (mid-March to early November), so this cron hits the intended 8am target for most of the
+  # year and drifts to 7am only during the ~4 winter months on EST. The alternative, 0 13 * * *,
+  # would invert that tradeoff (8am EST / 9am EDT). This is a deliberate choice, not a bug —
+  # GitHub Actions schedules cannot express "8am America/New_York" directly.
+  schedule:
+    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       environment:
@@ -15,6 +24,15 @@ on:
         options:
           - dev
           - qa
+      test_subset:
+        description: 'Which tests to run'
+        required: false
+        default: 'everything'
+        type: choice
+        options:
+          - everything
+          - smoke
+          - regression
 
 jobs:
   deploy:
@@ -48,8 +66,36 @@ jobs:
       - name: Clean Allure results and report directories
         run: rm -rf allure-results allure-report && mkdir allure-results allure-report
 
+      # Resolves which --grep tag (if any) the test run step below should apply.
+      # - schedule trigger (no inputs available): always forced to @smoke, regardless of
+      #   whatever the workflow_dispatch test_subset default is.
+      # - workflow_dispatch with test_subset=smoke/regression: --grep @<that tag>.
+      # - workflow_dispatch with test_subset=everything (the default), and ordinary push/PR
+      #   triggers (which have no inputs at all): no --grep, full suite, exactly as before.
+      - name: Resolve test grep tag
+        id: grep-tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TEST_SUBSET: ${{ github.event.inputs.test_subset }}
+        run: |
+          if [ "$EVENT_NAME" == "schedule" ]; then
+            echo "grep_arg=--grep @smoke" >> "$GITHUB_OUTPUT"
+          elif [ "$TEST_SUBSET" == "smoke" ]; then
+            echo "grep_arg=--grep @smoke" >> "$GITHUB_OUTPUT"
+          elif [ "$TEST_SUBSET" == "regression" ]; then
+            echo "grep_arg=--grep @regression" >> "$GITHUB_OUTPUT"
+          else
+            echo "grep_arg=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Run Playwright tests
-        run: npx playwright test
+        # --workers=4 overrides playwright.config.ts's CI default (workers: 1) from the CLI,
+        # which takes precedence over the config file. This suite is network-bound (waiting on
+        # the remote demo site) rather than CPU-bound, so running above the runner's 2 physical
+        # cores (ubuntu-latest) is reasonable despite fullyParallel already being set in config.
+        env:
+          GREP_ARG: ${{ steps.grep-tag.outputs.grep_arg }}
+        run: npx playwright test $GREP_ARG --workers=4
         continue-on-error: true
 
       - name: Add Allure environment and executor info
