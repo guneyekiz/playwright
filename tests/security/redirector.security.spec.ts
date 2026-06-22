@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 // the same origin. This spec locks in that same-origin behavior; it is not a
 // parameterized open-redirect (there's no user-controlled redirect target on this
 // app to probe with a crafted value).
-test.describe('Redirect Link (/redirector)', () => {
+test.describe('Redirect Link (/redirector)', { tag: '@regression' }, () => {
   test('redirect link points to a relative, same-origin target', async ({ page }) => {
     await page.goto('/redirector');
 

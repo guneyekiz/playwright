@@ -11,7 +11,7 @@ const TEST_PASSWORD = process.env.TEST_PASSWORD!;
 // server explicitly sends (confirmed via the raw Set-Cookie header: `path=/; HttpOnly`
 // only). Missing Secure on a session cookie is a real (if low-severity, given this is
 // a public demo app) finding worth a permanent regression check.
-test.describe('session cookie flags after login', () => {
+test.describe('session cookie flags after login', { tag: '@regression' }, () => {
   test('session cookie is HttpOnly and defaults to SameSite=Lax, but missing Secure', async ({ page }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();

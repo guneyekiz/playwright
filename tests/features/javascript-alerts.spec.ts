@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { JavascriptAlertsPage } from '../pages/JavascriptAlertsPage';
 
-test.describe('JavaScript Alerts', () => {
+test.describe('JavaScript Alerts', { tag: '@regression' }, () => {
   test('clicking OK on the alert reports a successful click', async ({ page }) => {
     const alertsPage = new JavascriptAlertsPage(page);
     await alertsPage.goto();

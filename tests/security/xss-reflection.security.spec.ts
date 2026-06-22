@@ -7,7 +7,7 @@ import { LoginPage } from '../pages/LoginPage';
 // in as a regression check.
 const XSS_PROBES = ['<script>alert(1)</script>', '"><svg onload=alert(1)>'];
 
-test.describe('reflected XSS probe on login form', () => {
+test.describe('reflected XSS probe on login form', { tag: '@regression' }, () => {
   for (const probe of XSS_PROBES) {
     test(`encodes "${probe}" instead of executing it`, async ({ page }) => {
       const loginPage = new LoginPage(page);

@@ -4,7 +4,7 @@ const ENDPOINT = '/authenticate';
 const VALID_CREDENTIALS = { username: process.env.TEST_USERNAME!, password: process.env.TEST_PASSWORD! };
 const INVALID_CREDENTIALS = { username: process.env.TEST_USERNAME!, password: 'wrongpassword' };
 
-test.describe('Login API (/authenticate)', () => {
+test.describe('Login API (/authenticate)', { tag: '@smoke' }, () => {
   test('valid credentials redirect to /secure', async ({ request }) => {
     const response = await request.post(ENDPOINT, {
       form: VALID_CREDENTIALS,

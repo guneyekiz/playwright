@@ -8,7 +8,7 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 // This is a regression spec locking in that *current* (buggy) behavior: if the server-side
 // bug is ever fixed, this test will start failing and needs to be updated to assert success
 // instead — that failure is the point, it's how a behavior change here gets noticed.
-test.describe('Forgot Password', () => {
+test.describe('Forgot Password', { tag: '@regression' }, () => {
   test('submitting the form currently returns a 500 (known server-side bug)', async ({ page }) => {
     const forgotPasswordPage = new ForgotPasswordPage(page);
     await forgotPasswordPage.goto();

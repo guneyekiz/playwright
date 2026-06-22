@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { CheckboxesPage } from '../pages/CheckboxesPage';
 
-test.describe('Checkboxes', () => {
+test.describe('Checkboxes', { tag: '@regression' }, () => {
   test('checkbox 1 starts unchecked and checkbox 2 starts checked', async ({ page }) => {
     const checkboxesPage = new CheckboxesPage(page);
     await checkboxesPage.goto();

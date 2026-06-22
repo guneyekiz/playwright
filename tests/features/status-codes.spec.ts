@@ -6,22 +6,22 @@ import { test, expect } from '@playwright/test';
 // Response itself, call page.goto() directly rather than adding a return value to a page
 // object's goto().
 test.describe('Status Codes', () => {
-  test('/status_codes/200 returns 200', async ({ page }) => {
+  test('/status_codes/200 returns 200', { tag: ['@smoke', '@regression'] }, async ({ page }) => {
     const response = await page.goto('/status_codes/200');
     expect(response?.status()).toBe(200);
   });
 
-  test('/status_codes/301 returns 301', async ({ page }) => {
+  test('/status_codes/301 returns 301', { tag: ['@smoke', '@regression'] }, async ({ page }) => {
     const response = await page.goto('/status_codes/301');
     expect(response?.status()).toBe(301);
   });
 
-  test('/status_codes/404 returns 404', async ({ page }) => {
+  test('/status_codes/404 returns 404', { tag: ['@smoke', '@regression'] }, async ({ page }) => {
     const response = await page.goto('/status_codes/404');
     expect(response?.status()).toBe(404);
   });
 
-  test('/status_codes/500 returns 500', async ({ page }) => {
+  test('/status_codes/500 returns 500', { tag: ['@smoke', '@regression'] }, async ({ page }) => {
     const response = await page.goto('/status_codes/500');
     expect(response?.status()).toBe(500);
   });

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { AddRemoveElementsPage } from '../pages/AddRemoveElementsPage';
 
-test.describe('Add/Remove Elements', () => {
+test.describe('Add/Remove Elements', { tag: '@regression' }, () => {
   test('starts with no Delete buttons', async ({ page }) => {
     const addRemovePage = new AddRemoveElementsPage(page);
     await addRemovePage.goto();

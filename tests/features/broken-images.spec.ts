@@ -3,7 +3,7 @@ import { BrokenImagesPage } from '../pages/BrokenImagesPage';
 
 // This page's whole premise is two intentionally broken <img> sources (see Finding 9 in
 // docs/app-exploration.md) — a 404 is the expected/correct behavior here, not a defect.
-test.describe('Broken Images', () => {
+test.describe('Broken Images', { tag: '@regression' }, () => {
   test('renders exactly three images in the example section', async ({ page }) => {
     const brokenImagesPage = new BrokenImagesPage(page);
     await brokenImagesPage.goto();

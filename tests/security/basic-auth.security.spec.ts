@@ -8,7 +8,7 @@ import { BasicAuthPage } from '../pages/BasicAuthPage';
 const VALID_USERNAME = process.env.BASIC_AUTH_USERNAME!;
 const VALID_PASSWORD = process.env.BASIC_AUTH_PASSWORD!;
 
-test.describe('Basic Auth (/basic_auth)', () => {
+test.describe('Basic Auth (/basic_auth)', { tag: '@regression' }, () => {
   test('grants access with correct credentials', async ({ browser }) => {
     const context = await browser.newContext({
       httpCredentials: { username: VALID_USERNAME, password: VALID_PASSWORD },

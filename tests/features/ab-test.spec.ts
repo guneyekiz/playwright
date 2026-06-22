@@ -6,7 +6,7 @@ import { AbTestPage } from '../pages/AbTestPage';
 // and 6 in docs/app-exploration.md). A real browser never shows the placeholder long enough
 // to assert on it, so these specs assert on the post-rewrite heading only, via a regex that
 // covers both variants instead of pinning to one.
-test.describe('A/B Testing', () => {
+test.describe('A/B Testing', { tag: '@regression' }, () => {
   test('serves one of the two known heading variants', async ({ page }) => {
     const abTestPage = new AbTestPage(page);
     await abTestPage.goto();

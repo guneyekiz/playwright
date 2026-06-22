@@ -7,6 +7,8 @@
     "test": "npx playwright test --reporter=html",
     "test:dev": "npx playwright test --reporter=html",
     "test:qa": "cross-env TEST_ENV=qa npx playwright test --reporter=html",
+    "test:smoke": "npx playwright test --grep @smoke --reporter=html",
+    "test:regression": "npx playwright test --grep @regression --reporter=html",
     "posttest": "allure generate allure-results --clean && allure open && npx playwright show-report"
   },
   "keywords": [],

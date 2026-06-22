@@ -8,7 +8,7 @@ import { DynamicLoadingPage } from '../pages/DynamicLoadingPage';
 // auto-wait/retry has enough room to outlast the real delay.
 const POST_DELAY_TIMEOUT = 10_000;
 
-test.describe('Dynamic Loading', () => {
+test.describe('Dynamic Loading', { tag: '@regression' }, () => {
   test('Example 1: hidden element is shown after the delay', async ({ page }) => {
     const dynamicLoadingPage = new DynamicLoadingPage(page);
     await dynamicLoadingPage.gotoExample1();

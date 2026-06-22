@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { DropdownPage } from '../pages/DropdownPage';
 
-test.describe('Dropdown', () => {
+test.describe('Dropdown', { tag: '@regression' }, () => {
   test('starts with the disabled placeholder option selected', async ({ page }) => {
     const dropdownPage = new DropdownPage(page);
     await dropdownPage.goto();

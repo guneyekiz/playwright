@@ -97,6 +97,8 @@ The two reports show different things: the **Playwright HTML report** (`npx play
 
 To run a single spec without triggering `posttest`: `npx playwright test tests/login.spec.ts`
 
+Tests are tagged `@smoke` (fast critical-path checks) or `@regression` (everything else). Run a subset with `npm run test:smoke` / `npm run test:regression`, or directly via `npx playwright test --grep @smoke`.
+
 ## CI
 
 A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `main`, builds the Playwright + Allure reports, and deploys both to `gh-pages` (served at https://guneyekiz.github.io/playwright/). Also supports manual `workflow_dispatch` with a `dev`/`qa` environment choice.

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 // current (incomplete) header posture as a regression baseline rather than asserting
 // an ideal-but-unmet state — it should start failing the moment any of these
 // improves or regresses.
-test.describe('response security headers (/login)', () => {
+test.describe('response security headers (/login)', { tag: '@regression' }, () => {
   test('sends clickjacking and MIME-sniffing protections', async ({ request }) => {
     const response = await request.get('/login');
     const headers = response.headers();

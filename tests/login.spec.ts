@@ -4,7 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 const TEST_USERNAME = process.env.TEST_USERNAME!;
 const TEST_PASSWORD = process.env.TEST_PASSWORD!;
 
-test('logs in successfully with valid credentials', async ({ page }) => {
+test('logs in successfully with valid credentials', { tag: ['@smoke', '@regression'] }, async ({ page }) => {
   const loginPage = new LoginPage(page);
 
   await loginPage.goto();
@@ -14,7 +14,7 @@ test('logs in successfully with valid credentials', async ({ page }) => {
   await expect(loginPage.flashMessage).toContainText('You logged into a secure area!');
 });
 
-test('shows an error with invalid credentials', async ({ page }) => {
+test('shows an error with invalid credentials', { tag: '@regression' }, async ({ page }) => {
   const loginPage = new LoginPage(page);
 
   await loginPage.goto();

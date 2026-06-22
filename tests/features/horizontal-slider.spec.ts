@@ -3,7 +3,7 @@ import { HorizontalSliderPage } from '../pages/HorizontalSliderPage';
 
 // <input type="range"> doesn't support locator.fill(); moving it requires keyboard arrow
 // presses (or a mouse drag) while focused, per the page's own on-screen instructions.
-test.describe('Horizontal Slider', () => {
+test.describe('Horizontal Slider', { tag: '@regression' }, () => {
   test('starts at 0', async ({ page }) => {
     const sliderPage = new HorizontalSliderPage(page);
     await sliderPage.goto();

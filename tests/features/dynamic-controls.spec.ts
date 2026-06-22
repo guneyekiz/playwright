@@ -8,7 +8,7 @@ import { DynamicControlsPage } from '../pages/DynamicControlsPage';
 // has enough room to outlast the real delay.
 const POST_DELAY_TIMEOUT = 10_000;
 
-test.describe('Dynamic Controls', () => {
+test.describe('Dynamic Controls', { tag: '@regression' }, () => {
   test('Remove button removes the checkbox, Add brings it back', async ({ page }) => {
     const dynamicControlsPage = new DynamicControlsPage(page);
     await dynamicControlsPage.goto();

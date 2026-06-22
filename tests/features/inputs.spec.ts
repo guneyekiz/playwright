@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { InputsPage } from '../pages/InputsPage';
 
-test.describe('Inputs', () => {
+test.describe('Inputs', { tag: '@regression' }, () => {
   test('accepts numeric entry', async ({ page }) => {
     const inputsPage = new InputsPage(page);
     await inputsPage.goto();

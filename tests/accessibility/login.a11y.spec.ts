@@ -14,7 +14,7 @@ async function getPlayAudit() {
 const TEST_USERNAME = process.env.TEST_USERNAME!;
 const TEST_PASSWORD = process.env.TEST_PASSWORD!;
 
-test.describe('login flow accessibility', () => {
+test.describe('login flow accessibility', { tag: '@regression' }, () => {
   test('login page meets accessibility threshold (Lighthouse)', async ({}, testInfo) => {
     // playAudit() attaches over the Chrome DevTools Protocol, so this launches its own
     // chromium instance with a debugging port instead of using the default `page` fixture.

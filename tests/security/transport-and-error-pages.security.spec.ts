@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 // the public demo nature of the target) finding worth a permanent regression check.
 // If Heroku's routing/SSL setup ever starts enforcing HTTPS (a positive change), this
 // test will fail and need updating to assert the new (better) behavior instead.
-test.describe('transport security', () => {
+test.describe('transport security', { tag: '@regression' }, () => {
   test('plain HTTP is served directly instead of being redirected to HTTPS', async ({ request, baseURL }) => {
     const httpUrl = baseURL!.replace(/^https:\/\//, 'http://');
 
@@ -21,7 +21,7 @@ test.describe('transport security', () => {
 // return only the site's own templated "This page returned a 500 status code" markup
 // - no stack trace, internal file path, or framework/server version banner in the
 // response body.
-test.describe('status/error pages do not leak internals', () => {
+test.describe('status/error pages do not leak internals', { tag: '@regression' }, () => {
   test('the 500 status page returns a generic body with no stack trace or internal paths', async ({ request }) => {
     const response = await request.get('/status_codes/500');
     const body = await response.text();
