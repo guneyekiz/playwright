@@ -21,11 +21,28 @@ tests/
     AddRemoveElementsPage.ts   /add_remove_elements/ locators + actions
     BasicAuthPage.ts           /basic_auth locators
     BrokenImagesPage.ts        /broken_images locators + helpers
+    CheckboxesPage.ts          /checkboxes locators
+    DropdownPage.ts            /dropdown locators + actions
+    DynamicControlsPage.ts     /dynamic_controls locators + actions
+    DynamicLoadingPage.ts      /dynamic_loading/1 and /2 locators + actions
+    ForgotPasswordPage.ts      /forgot_password locators + actions
+    HorizontalSliderPage.ts    /horizontal_slider locators + keyboard actions
+    InputsPage.ts              /inputs locators + actions
+    JavascriptAlertsPage.ts    /javascript_alerts locators + dialog-handling actions
   features/                  one spec per example page from docs/app-exploration.md
     ab-test.spec.ts             A/B Testing (asserts on either heading variant — random by design)
     add-remove-elements.spec.ts Add/Remove Elements
     basic-auth.spec.ts          Basic Auth (valid/invalid creds via browser.newContext({ httpCredentials }))
     broken-images.spec.ts       Broken Images
+    checkboxes.spec.ts          Checkboxes
+    dropdown.spec.ts            Dropdown
+    dynamic-controls.spec.ts    Dynamic Controls (checkbox/input enable-disable with a real delay)
+    dynamic-loading.spec.ts     Dynamic Loading (both sub-examples, with a real delay)
+    forgot-password.spec.ts     Forgot Password (regression spec locking in a known 500 bug)
+    horizontal-slider.spec.ts   Horizontal Slider
+    inputs.spec.ts              Inputs
+    javascript-alerts.spec.ts   JavaScript Alerts (alert/confirm/prompt dialogs)
+    status-codes.spec.ts        Status Codes (asserts on raw goto() response status, no page object)
   security/                  permanent regression specs for confirmed security findings (docs/app-exploration.md)
     basic-auth.security.spec.ts          Basic Auth enumeration/failure behavior
     cookies.security.spec.ts             session cookie flags (HttpOnly/SameSite/Secure)
