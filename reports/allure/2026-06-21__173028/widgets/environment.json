@@ -1,1 +1,0 @@
-[{"values":["qa"],"name":"Environment"},{"values":["https://the-internet.herokuapp.com"],"name":"Base.URL"},{"values":["chromium"],"name":"Browser"},{"values":["20"],"name":"Node.Version"},{"values":["ubuntu-latest"],"name":"OS"}]
