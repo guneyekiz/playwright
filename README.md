@@ -101,7 +101,7 @@ Tests are tagged `@smoke` (fast critical-path checks) or `@regression` (everythi
 
 ## CI
 
-A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `main`, builds the Playwright + Allure reports, and deploys both to `gh-pages` (served at https://guneyekiz.github.io/playwright/). Also supports manual `workflow_dispatch` with a `dev`/`qa` environment choice and an `everything`/`smoke`/`regression` test-subset choice, plus a daily scheduled run (cron, UTC) that always greps for `@smoke` against `dev`. Reports are organized by which subset ran — `reports/<allure|playwright>/<smoke|regression|everything>/<timestamp|latest>/` — so each subset keeps its own independent "latest" report.
+A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `main` (both greps for `@smoke`), builds the Playwright + Allure reports, and deploys both to `gh-pages` (served at https://guneyekiz.github.io/playwright/). Also supports manual `workflow_dispatch` with a `dev`/`qa` environment choice and a `smoke`/`regression` test-subset choice (default `smoke`; `regression` only ever runs via this manual trigger), plus an hourly scheduled run (cron, UTC) that always greps for `@smoke` against `dev`. Reports are organized run-folder-first — `reports/<Smoke|Regression>/<timestamp|latest>/<allure|playwright>/` — so each subset keeps its own independent "latest" report.
 
 ## Working with Claude Code
 
