@@ -66,12 +66,15 @@ jobs:
       - name: Clean Allure results and report directories
         run: rm -rf allure-results allure-report && mkdir allure-results allure-report
 
-      # Resolves which --grep tag (if any) the test run step below should apply.
-      # - schedule trigger (no inputs available): always forced to @smoke, regardless of
-      #   whatever the workflow_dispatch test_subset default is.
-      # - workflow_dispatch with test_subset=smoke/regression: --grep @<that tag>.
+      # Resolves which --grep tag (if any) the test run step below should apply, and which
+      # named subset ("smoke" / "regression" / "everything") this run's reports get nested
+      # under in reports/<tool>/<subset>/... below. Same branching for both outputs:
+      # - schedule trigger (no inputs available): always forced to @smoke / subset=smoke,
+      #   regardless of whatever the workflow_dispatch test_subset default is.
+      # - workflow_dispatch with test_subset=smoke/regression: --grep @<that tag>, matching subset.
       # - workflow_dispatch with test_subset=everything (the default), and ordinary push/PR
-      #   triggers (which have no inputs at all): no --grep, full suite, exactly as before.
+      #   triggers (which have no inputs at all): no --grep, full suite, subset=everything,
+      #   exactly as before.
       - name: Resolve test grep tag
         id: grep-tag
         env:
@@ -80,12 +83,16 @@ jobs:
         run: |
           if [ "$EVENT_NAME" == "schedule" ]; then
             echo "grep_arg=--grep @smoke" >> "$GITHUB_OUTPUT"
+            echo "subset=smoke" >> "$GITHUB_OUTPUT"
           elif [ "$TEST_SUBSET" == "smoke" ]; then
             echo "grep_arg=--grep @smoke" >> "$GITHUB_OUTPUT"
+            echo "subset=smoke" >> "$GITHUB_OUTPUT"
           elif [ "$TEST_SUBSET" == "regression" ]; then
             echo "grep_arg=--grep @regression" >> "$GITHUB_OUTPUT"
+            echo "subset=regression" >> "$GITHUB_OUTPUT"
           else
             echo "grep_arg=" >> "$GITHUB_OUTPUT"
+            echo "subset=everything" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run Playwright tests
@@ -128,29 +135,39 @@ jobs:
         id: timestamp
         run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
 
+      # Reports are nested under the subset resolved above (smoke/regression/everything) so a
+      # scheduled smoke run's report lands in its own tree, separate from regression/everything.
       - name: Create timestamped directories for reports
-        run: mkdir -p reports/allure/${{ env.timestamp }} reports/playwright/${{ env.timestamp }}
+        env:
+          SUBSET: ${{ steps.grep-tag.outputs.subset }}
+        run: mkdir -p reports/allure/$SUBSET/${{ env.timestamp }} reports/playwright/$SUBSET/${{ env.timestamp }}
 
       - name: Copy Playwright report to timestamped directory
-        run: cp -r playwright-report/* reports/playwright/${{ env.timestamp }}
+        env:
+          SUBSET: ${{ steps.grep-tag.outputs.subset }}
+        run: cp -r playwright-report/* reports/playwright/$SUBSET/${{ env.timestamp }}
 
       - name: Copy Allure report to timestamped directory
-        run: cp -r allure-report/* reports/allure/${{ env.timestamp }}
+        env:
+          SUBSET: ${{ steps.grep-tag.outputs.subset }}
+        run: cp -r allure-report/* reports/allure/$SUBSET/${{ env.timestamp }}
 
       - name: Verify copied Allure report
-        run: ls -la reports/allure/${{ env.timestamp }}
+        env:
+          SUBSET: ${{ steps.grep-tag.outputs.subset }}
+        run: ls -la reports/allure/$SUBSET/${{ env.timestamp }}
 
       - name: Upload Playwright Report Artifact
         uses: actions/upload-artifact@v6
         with:
           name: Playwright Report
-          path: reports/playwright/${{ env.timestamp }}
+          path: reports/playwright/${{ steps.grep-tag.outputs.subset }}/${{ env.timestamp }}
 
       - name: Upload Allure Report Artifact
         uses: actions/upload-artifact@v6
         with:
           name: Allure Report
-          path: reports/allure/${{ env.timestamp }}
+          path: reports/allure/${{ steps.grep-tag.outputs.subset }}/${{ env.timestamp }}
 
       - name: Configure Git
         run: |
@@ -175,34 +192,62 @@ jobs:
           sudo chmod -R u+w .
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true
 
+      # Each subset (smoke/regression/everything) maintains its own independent "latest" —
+      # a smoke run only ever touches reports/allure/smoke/latest, never regression/latest or
+      # everything/latest, so the scheduled smoke run stops clobbering what "latest" means for
+      # the other subsets.
       - name: Update Latest Allure Report
+        env:
+          SUBSET: ${{ steps.grep-tag.outputs.subset }}
         run: |
-          rm -rf reports/allure/latest
-          cp -r reports/allure/${{ env.timestamp }} reports/allure/latest
+          rm -rf reports/allure/$SUBSET/latest
+          cp -r reports/allure/$SUBSET/${{ env.timestamp }} reports/allure/$SUBSET/latest
 
       - name: Update Latest Playwright Report
+        env:
+          SUBSET: ${{ steps.grep-tag.outputs.subset }}
         run: |
-          rm -rf reports/playwright/latest
-          cp -r reports/playwright/${{ env.timestamp }} reports/playwright/latest
+          rm -rf reports/playwright/$SUBSET/latest
+          cp -r reports/playwright/$SUBSET/${{ env.timestamp }} reports/playwright/$SUBSET/latest
 
+      # Generalized from the old single-flat-directory version: loops over the three subset
+      # subdirectories (smoke/regression/everything) and builds one HTML section per subset,
+      # each with its own historical timestamped links. A subset directory may not exist yet
+      # (e.g. before the first regression run ever happens) — the ls/grep is guarded so that
+      # case produces an empty link list instead of failing the step.
       - name: Generate Report Links for index.html
         id: generate-links
         run: |
-          allure_links=$(ls -d reports/allure/*/ | grep -v latest | sed 's|reports/allure/\(.*\)/|<li><a href="reports/allure/\1/index.html">\1</a></li>|')
-          playwright_links=$(ls -d reports/playwright/*/ | grep -v latest | sed 's|reports/playwright/\(.*\)/|<li><a href="reports/playwright/\1/index.html">\1</a></li>|')
-          echo "Allure Links: $allure_links"
-          echo "Playwright Links: $playwright_links"
-          echo "allure_links<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$allure_links" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-          echo "playwright_links<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$playwright_links" >> "$GITHUB_OUTPUT"
+          sections=""
+          for subset in smoke regression everything; do
+            allure_links=$(ls -d reports/allure/$subset/*/ 2>/dev/null | grep -v latest | sed "s|reports/allure/$subset/\(.*\)/|<li><a href=\"reports/allure/$subset/\1/index.html\">\1</a></li>|")
+            playwright_links=$(ls -d reports/playwright/$subset/*/ 2>/dev/null | grep -v latest | sed "s|reports/playwright/$subset/\(.*\)/|<li><a href=\"reports/playwright/$subset/\1/index.html\">\1</a></li>|")
+            echo "Allure Links ($subset): $allure_links"
+            echo "Playwright Links ($subset): $playwright_links"
+            section=$(cat <<SECTION
+          <h2>$subset</h2>
+          <h3>Allure Reports</h3>
+          <ul>
+            <li><a href="reports/allure/$subset/latest/index.html">Latest Allure Report</a></li>
+            $allure_links
+          </ul>
+          <h3>Playwright Reports</h3>
+          <ul>
+            <li><a href="reports/playwright/$subset/latest/index.html">Latest Playwright Report</a></li>
+            $playwright_links
+          </ul>
+          SECTION
+          )
+            sections="$sections
+          $section"
+          done
+          echo "sections<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$sections" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Debugging Print Generated Links
         run: |
-          echo "Allure Links: ${{ steps.generate-links.outputs.allure_links }}"
-          echo "Playwright Links: ${{ steps.generate-links.outputs.playwright_links }}"
+          echo "Sections: ${{ steps.generate-links.outputs.sections }}"
 
       - name: Create or Update Root index.html
         run: |
@@ -213,16 +258,7 @@ jobs:
           </head>
           <body>
             <h1>Reports</h1>
-            <h2>Allure Reports</h2>
-            <ul>
-              <li><a href="reports/allure/latest/index.html">Latest Allure Report</a></li>
-              '"${{ steps.generate-links.outputs.allure_links }}"'
-            </ul>
-            <h2>Playwright Reports</h2>
-            <ul>
-              <li><a href="reports/playwright/latest/index.html">Latest Playwright Report</a></li>
-              '"${{ steps.generate-links.outputs.playwright_links }}"'
-            </ul>
+            '"${{ steps.generate-links.outputs.sections }}"'
           </body>
           </html>' > index.html
 
@@ -245,8 +281,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ env.timestamp }}/index.html"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/allure/${{ steps.grep-tag.outputs.subset }}/${{ env.timestamp }}/index.html"
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ env.timestamp }}/index.html"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/playwright/${{ steps.grep-tag.outputs.subset }}/${{ env.timestamp }}/index.html"
