@@ -60,17 +60,22 @@ jobs:
       - name: Clean Allure results and report directories
         run: rm -rf allure-results allure-report && mkdir allure-results allure-report
 
-      # Resolves which --grep tag this run applies, and which capitalized top-level folder
-      # ("Smoke" / "Regression") this run's reports get nested under in reports/<folder>/...
-      # below. Every trigger now resolves to exactly one of the two — there's no longer an
-      # unfiltered "everything" path. Same branching for both outputs:
+      # Resolves which --grep tag this run applies, which capitalized top-level folder
+      # ("Smoke" / "Regression") this run's reports get nested under, and which capitalized
+      # environment folder ("Dev" / "QA") nests inside that. Every trigger now resolves to
+      # exactly one of each — there's no longer an unfiltered "everything" path. Branching:
       # - workflow_dispatch with test_subset=regression: --grep @regression / folder=Regression.
       # - everything else (schedule — no inputs available; ordinary push/PR — no inputs at all;
       #   workflow_dispatch with test_subset=smoke, the default): --grep @smoke / folder=Smoke.
+      # - env_folder mirrors the same environment input used for the job's `environment:` key
+      #   and environment.properties below (github.event.inputs.environment || 'dev'). QA must
+      #   stay a literal uppercase mapping ("qa" -> "QA") rather than generic shell
+      #   capitalization (e.g. ${var^}), which would produce "Qa" instead of "QA".
       - name: Resolve test grep tag
         id: grep-tag
         env:
           TEST_SUBSET: ${{ github.event.inputs.test_subset }}
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
         run: |
           if [ "$TEST_SUBSET" == "regression" ]; then
             echo "grep_arg=--grep @regression" >> "$GITHUB_OUTPUT"
@@ -78,6 +83,11 @@ jobs:
           else
             echo "grep_arg=--grep @smoke" >> "$GITHUB_OUTPUT"
             echo "folder=Smoke" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$ENVIRONMENT" == "qa" ]; then
+            echo "env_folder=QA" >> "$GITHUB_OUTPUT"
+          else
+            echo "env_folder=Dev" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run Playwright tests
@@ -120,40 +130,45 @@ jobs:
         id: timestamp
         run: echo "timestamp=$(date +%Y-%m-%d__%H%M%S)" >> $GITHUB_ENV
 
-      # Reports are nested run-folder-first, tool-second, under the capitalized top-level
-      # folder resolved above (Smoke/Regression), so a scheduled smoke run's report lands in
-      # its own tree, separate from Regression.
+      # Reports are nested run-folder-first, env-second, tool-third, under the capitalized
+      # top-level folder resolved above (Smoke/Regression) and the capitalized environment
+      # folder (Dev/QA), so a scheduled smoke run's report lands in its own tree, separate from
+      # Regression, and separate from the other environment's runs within the same subset.
       - name: Create timestamped directories for reports
         env:
           FOLDER: ${{ steps.grep-tag.outputs.folder }}
-        run: mkdir -p reports/$FOLDER/${{ env.timestamp }}/allure reports/$FOLDER/${{ env.timestamp }}/playwright
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
+        run: mkdir -p reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/allure reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/playwright
 
       - name: Copy Playwright report to timestamped directory
         env:
           FOLDER: ${{ steps.grep-tag.outputs.folder }}
-        run: cp -r playwright-report/* reports/$FOLDER/${{ env.timestamp }}/playwright
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
+        run: cp -r playwright-report/* reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/playwright
 
       - name: Copy Allure report to timestamped directory
         env:
           FOLDER: ${{ steps.grep-tag.outputs.folder }}
-        run: cp -r allure-report/* reports/$FOLDER/${{ env.timestamp }}/allure
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
+        run: cp -r allure-report/* reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/allure
 
       - name: Verify copied Allure report
         env:
           FOLDER: ${{ steps.grep-tag.outputs.folder }}
-        run: ls -la reports/$FOLDER/${{ env.timestamp }}/allure
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
+        run: ls -la reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/allure
 
       - name: Upload Playwright Report Artifact
         uses: actions/upload-artifact@v6
         with:
           name: Playwright Report
-          path: reports/${{ steps.grep-tag.outputs.folder }}/${{ env.timestamp }}/playwright
+          path: reports/${{ steps.grep-tag.outputs.folder }}/${{ steps.grep-tag.outputs.env_folder }}/${{ env.timestamp }}/playwright
 
       - name: Upload Allure Report Artifact
         uses: actions/upload-artifact@v6
         with:
           name: Allure Report
-          path: reports/${{ steps.grep-tag.outputs.folder }}/${{ env.timestamp }}/allure
+          path: reports/${{ steps.grep-tag.outputs.folder }}/${{ steps.grep-tag.outputs.env_folder }}/${{ env.timestamp }}/allure
 
       - name: Configure Git
         run: |
@@ -178,55 +193,67 @@ jobs:
           sudo chmod -R u+w .
           find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'reports' ! -name 'index.html' -exec rm -rf {} + || true
 
-      # Each top-level folder (Smoke/Regression) maintains its own independent "latest" —
-      # a smoke run only ever touches reports/Smoke/latest, never reports/Regression/latest,
-      # so a scheduled smoke run never clobbers what "latest" means for Regression.
+      # Each top-level folder/environment combination (Smoke/Dev, Smoke/QA, Regression/Dev,
+      # Regression/QA) maintains its own independent "latest" — a scheduled smoke/dev run only
+      # ever touches reports/Smoke/Dev/latest, never reports/Smoke/QA/latest or anything under
+      # Regression, so it never clobbers what "latest" means for the other three combinations.
       - name: Update Latest Allure Report
         env:
           FOLDER: ${{ steps.grep-tag.outputs.folder }}
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
         run: |
-          rm -rf reports/$FOLDER/latest/allure
-          mkdir -p reports/$FOLDER/latest
-          cp -r reports/$FOLDER/${{ env.timestamp }}/allure reports/$FOLDER/latest/allure
+          rm -rf reports/$FOLDER/$ENV_FOLDER/latest/allure
+          mkdir -p reports/$FOLDER/$ENV_FOLDER/latest
+          cp -r reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/allure reports/$FOLDER/$ENV_FOLDER/latest/allure
 
       - name: Update Latest Playwright Report
         env:
           FOLDER: ${{ steps.grep-tag.outputs.folder }}
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
         run: |
-          rm -rf reports/$FOLDER/latest/playwright
-          mkdir -p reports/$FOLDER/latest
-          cp -r reports/$FOLDER/${{ env.timestamp }}/playwright reports/$FOLDER/latest/playwright
+          rm -rf reports/$FOLDER/$ENV_FOLDER/latest/playwright
+          mkdir -p reports/$FOLDER/$ENV_FOLDER/latest
+          cp -r reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/playwright reports/$FOLDER/$ENV_FOLDER/latest/playwright
 
-      # Loops over the two top-level folders (Smoke/Regression) and builds one HTML section
-      # per folder, each with its own historical timestamped links. Reports are nested
-      # run-folder-first, tool-second: reports/<Folder>/<timestamp>/<allure|playwright>/. A
-      # folder may not exist yet (e.g. before the first regression run ever happens) — the
-      # ls/grep is guarded so that case produces an empty link list instead of failing the step.
+      # Loops over the two top-level folders (Smoke/Regression), and within each, over the two
+      # environment folders (Dev/QA), building one HTML subsection per combination, each with
+      # its own historical timestamped links. Reports are nested run-folder-first, env-second,
+      # tool-third: reports/<Folder>/<EnvFolder>/<timestamp>/<allure|playwright>/. A combination
+      # may not exist yet (e.g. before the first QA regression run ever happens) — the ls/grep
+      # is guarded so that case produces an empty link list instead of failing the step. Note:
+      # reports sitting at the older pre-env-split paths (reports/<Folder>/<timestamp>/... with
+      # no Dev/QA segment) are not picked up by this loop and so stop appearing in index.html —
+      # they remain on gh-pages untouched, just unlinked from the regenerated index.
       - name: Generate Report Links for index.html
         id: generate-links
         run: |
           sections=""
           for folder in Smoke Regression; do
-            allure_links=$(ls -d reports/$folder/*/allure/ 2>/dev/null | grep -v latest | sed "s|reports/$folder/\(.*\)/allure/|<li><a href=\"reports/$folder/\1/allure/index.html\">\1</a></li>|")
-            playwright_links=$(ls -d reports/$folder/*/playwright/ 2>/dev/null | grep -v latest | sed "s|reports/$folder/\(.*\)/playwright/|<li><a href=\"reports/$folder/\1/playwright/index.html\">\1</a></li>|")
-            echo "Allure Links ($folder): $allure_links"
-            echo "Playwright Links ($folder): $playwright_links"
-            section=$(cat <<SECTION
-          <h2>$folder</h2>
-          <h3>Allure Reports</h3>
+            folder_section="<h2>$folder</h2>"
+            for env_folder in Dev QA; do
+              allure_links=$(ls -d reports/$folder/$env_folder/*/allure/ 2>/dev/null | grep -v latest | sed "s|reports/$folder/$env_folder/\(.*\)/allure/|<li><a href=\"reports/$folder/$env_folder/\1/allure/index.html\">\1</a></li>|")
+              playwright_links=$(ls -d reports/$folder/$env_folder/*/playwright/ 2>/dev/null | grep -v latest | sed "s|reports/$folder/$env_folder/\(.*\)/playwright/|<li><a href=\"reports/$folder/$env_folder/\1/playwright/index.html\">\1</a></li>|")
+              echo "Allure Links ($folder/$env_folder): $allure_links"
+              echo "Playwright Links ($folder/$env_folder): $playwright_links"
+              subsection=$(cat <<SUBSECTION
+          <h3>$env_folder</h3>
+          <h4>Allure Reports</h4>
           <ul>
-            <li><a href="reports/$folder/latest/allure/index.html">Latest Allure Report</a></li>
+            <li><a href="reports/$folder/$env_folder/latest/allure/index.html">Latest Allure Report</a></li>
             $allure_links
           </ul>
-          <h3>Playwright Reports</h3>
+          <h4>Playwright Reports</h4>
           <ul>
-            <li><a href="reports/$folder/latest/playwright/index.html">Latest Playwright Report</a></li>
+            <li><a href="reports/$folder/$env_folder/latest/playwright/index.html">Latest Playwright Report</a></li>
             $playwright_links
           </ul>
-          SECTION
+          SUBSECTION
           )
+              folder_section="$folder_section
+          $subsection"
+            done
             sections="$sections
-          $section"
+          $folder_section"
           done
           echo "sections<<EOF" >> "$GITHUB_OUTPUT"
           echo "$sections" >> "$GITHUB_OUTPUT"
@@ -268,8 +295,8 @@ jobs:
 
       - name: Output Allure report URL
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ steps.grep-tag.outputs.folder }}/${{ env.timestamp }}/allure/index.html"
+         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ steps.grep-tag.outputs.folder }}/${{ steps.grep-tag.outputs.env_folder }}/${{ env.timestamp }}/allure/index.html"
 
       - name: Output Playwright report URL
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ steps.grep-tag.outputs.folder }}/${{ env.timestamp }}/playwright/index.html"
+         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ steps.grep-tag.outputs.folder }}/${{ steps.grep-tag.outputs.env_folder }}/${{ env.timestamp }}/playwright/index.html"

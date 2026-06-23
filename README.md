@@ -101,7 +101,7 @@ Tests are tagged `@smoke` (fast critical-path checks) or `@regression` (everythi
 
 ## CI
 
-A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `main` (both greps for `@smoke`), builds the Playwright + Allure reports, and deploys both to `gh-pages` (served at https://guneyekiz.github.io/playwright/). Also supports manual `workflow_dispatch` with a `dev`/`qa` environment choice and a `smoke`/`regression` test-subset choice (default `smoke`; `regression` only ever runs via this manual trigger), plus an hourly scheduled run (cron, UTC) that always greps for `@smoke` against `dev`. Reports are organized run-folder-first — `reports/<Smoke|Regression>/<timestamp|latest>/<allure|playwright>/` — so each subset keeps its own independent "latest" report.
+A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `main` (both greps for `@smoke`), builds the Playwright + Allure reports, and deploys both to `gh-pages` (served at https://guneyekiz.github.io/playwright/). Also supports manual `workflow_dispatch` with a `dev`/`qa` environment choice and a `smoke`/`regression` test-subset choice (default `smoke`; `regression` only ever runs via this manual trigger), plus an hourly scheduled run (cron, UTC) that always greps for `@smoke` against `dev`. Reports are organized run-folder-first, then by environment — `reports/<Smoke|Regression>/<Dev|QA>/<timestamp|latest>/<allure|playwright>/` — so each subset/environment combination keeps its own independent "latest" report. Reports from before this environment split (no `Dev`/`QA` segment) remain on `gh-pages` but are no longer linked from the generated index.
 
 ## Working with Claude Code
 
