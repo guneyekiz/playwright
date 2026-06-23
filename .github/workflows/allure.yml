@@ -7,8 +7,23 @@ on:
     branches: [main]
   # Scheduled smoke run, every hour. GitHub Actions cron is UTC-only and cannot read
   # workflow_dispatch inputs, so this is a second, separate trigger from the manual one below.
+  #
+  # Also: weekly Monday regression runs, once against dev and once against qa, staggered 30
+  # minutes apart from each other and deliberately off minute 0 so neither lands on the same
+  # instant as the hourly smoke cron above (a same-instant collision would race both jobs on
+  # the gh-pages force-push, since there's no concurrency group on this workflow). schedule
+  # triggers carry no workflow_dispatch inputs, so github.event.schedule (the literal cron
+  # string that fired) is the only way the steps below can tell these two crons apart from each
+  # other and from the hourly smoke one. The qa cron string ('45 8 * * 1') is necessarily
+  # duplicated literally in three places in this file — here, in the job-level `environment:`
+  # key, and in the "Add Allure environment and executor info" step's Environment= line — because
+  # the job-level `environment:` key is evaluated before any step runs and so cannot reference
+  # steps.grep-tag.outputs.*. If this cron's time ever changes, all three spots must change
+  # together or they'll silently desync.
   schedule:
     - cron: '0 * * * *'
+    - cron: '15 8 * * 1'  # Monday 08:15 UTC — regression against dev
+    - cron: '45 8 * * 1'  # Monday 08:45 UTC — regression against qa
   workflow_dispatch:
     inputs:
       environment:
@@ -31,7 +46,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'dev' }}
+    # This cannot reference steps.grep-tag.outputs.* — the job-level `environment:` key is
+    # evaluated before any step runs. So the qa-regression cron string ('45 8 * * 1') has to be
+    # hardcoded here too, duplicating the schedule: list entry above and the Environment= line
+    # in the "Add Allure environment and executor info" step. workflow_dispatch's explicit
+    # environment input wins if present; otherwise the qa-regression cron resolves to 'qa';
+    # otherwise (the dev-regression cron, the hourly smoke cron, push, PR) default to 'dev'.
+    environment: ${{ github.event.inputs.environment || (github.event.schedule == '45 8 * * 1' && 'qa') || 'dev' }}
     permissions:
       contents: write
       deployments: write
@@ -64,30 +85,54 @@ jobs:
       # ("Smoke" / "Regression") this run's reports get nested under, and which capitalized
       # environment folder ("Dev" / "QA") nests inside that. Every trigger now resolves to
       # exactly one of each — there's no longer an unfiltered "everything" path. Branching:
+      # - github.event.schedule == '45 8 * * 1' (Monday 08:45 UTC weekly cron): --grep
+      #   @regression / folder=Regression / env_folder=QA. Checked first since schedule triggers
+      #   carry no workflow_dispatch inputs at all — this is the only way to single out this
+      #   specific cron from the rest.
+      # - github.event.schedule == '15 8 * * 1' (Monday 08:15 UTC weekly cron): --grep
+      #   @regression / folder=Regression / env_folder=Dev.
       # - workflow_dispatch with test_subset=regression: --grep @regression / folder=Regression.
-      # - everything else (schedule — no inputs available; ordinary push/PR — no inputs at all;
-      #   workflow_dispatch with test_subset=smoke, the default): --grep @smoke / folder=Smoke.
-      # - env_folder mirrors the same environment input used for the job's `environment:` key
-      #   and environment.properties below (github.event.inputs.environment || 'dev'). QA must
-      #   stay a literal uppercase mapping ("qa" -> "QA") rather than generic shell
-      #   capitalization (e.g. ${var^}), which would produce "Qa" instead of "QA".
+      # - everything else (the hourly smoke schedule — no inputs available; ordinary push/PR —
+      #   no inputs at all; workflow_dispatch with test_subset=smoke, the default): --grep
+      #   @smoke / folder=Smoke.
+      # - For the two cases above that aren't one of the two new weekly crons, env_folder mirrors
+      #   the same environment input used for the job's `environment:` key and
+      #   environment.properties below (github.event.inputs.environment || 'dev'). QA must stay
+      #   a literal uppercase mapping ("qa" -> "QA") rather than generic shell capitalization
+      #   (e.g. ${var^}), which would produce "Qa" instead of "QA".
+      # The qa cron string ('45 8 * * 1') is duplicated literally in three places in this file
+      # (the schedule: trigger list, the job-level `environment:` key, and here) because the
+      # job-level `environment:` key is evaluated before any step runs and so cannot reference
+      # this step's outputs — see the comments at those two other spots. If this cron's time
+      # ever changes, all three spots must change together.
       - name: Resolve test grep tag
         id: grep-tag
         env:
           TEST_SUBSET: ${{ github.event.inputs.test_subset }}
           ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+          SCHEDULE: ${{ github.event.schedule }}
         run: |
-          if [ "$TEST_SUBSET" == "regression" ]; then
+          if [ "$SCHEDULE" == "45 8 * * 1" ]; then
             echo "grep_arg=--grep @regression" >> "$GITHUB_OUTPUT"
             echo "folder=Regression" >> "$GITHUB_OUTPUT"
-          else
-            echo "grep_arg=--grep @smoke" >> "$GITHUB_OUTPUT"
-            echo "folder=Smoke" >> "$GITHUB_OUTPUT"
-          fi
-          if [ "$ENVIRONMENT" == "qa" ]; then
             echo "env_folder=QA" >> "$GITHUB_OUTPUT"
-          else
+          elif [ "$SCHEDULE" == "15 8 * * 1" ]; then
+            echo "grep_arg=--grep @regression" >> "$GITHUB_OUTPUT"
+            echo "folder=Regression" >> "$GITHUB_OUTPUT"
             echo "env_folder=Dev" >> "$GITHUB_OUTPUT"
+          else
+            if [ "$TEST_SUBSET" == "regression" ]; then
+              echo "grep_arg=--grep @regression" >> "$GITHUB_OUTPUT"
+              echo "folder=Regression" >> "$GITHUB_OUTPUT"
+            else
+              echo "grep_arg=--grep @smoke" >> "$GITHUB_OUTPUT"
+              echo "folder=Smoke" >> "$GITHUB_OUTPUT"
+            fi
+            if [ "$ENVIRONMENT" == "qa" ]; then
+              echo "env_folder=QA" >> "$GITHUB_OUTPUT"
+            else
+              echo "env_folder=Dev" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Run Playwright tests
@@ -101,9 +146,14 @@ jobs:
         continue-on-error: true
 
       - name: Add Allure environment and executor info
+        # Environment= mirrors the job-level `environment:` key's expression exactly (including
+        # the hardcoded qa-regression cron string '45 8 * * 1' — see the comments at the
+        # schedule: trigger list and the job-level `environment:` key for why this can't
+        # reference steps.grep-tag.outputs.* instead). Without this, a schedule-triggered run
+        # would always label itself Environment=dev here even on the qa-regression cron.
         run: |
           cat > allure-results/environment.properties <<EOF
-          Environment=${{ github.event.inputs.environment || 'dev' }}
+          Environment=${{ github.event.inputs.environment || (github.event.schedule == '45 8 * * 1' && 'qa') || 'dev' }}
           Base.URL=${{ env.BASE_URL }}
           Browser=chromium
           Node.Version=20
