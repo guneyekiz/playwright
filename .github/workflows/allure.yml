@@ -5,23 +5,31 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # Scheduled smoke run, every hour. GitHub Actions cron is UTC-only and cannot read
-  # workflow_dispatch inputs, so this is a second, separate trigger from the manual one below.
+  # Scheduled smoke run, daily, once against dev and once against qa, staggered 30 minutes apart
+  # (06:00/06:30 UTC) so the two never land on the same instant, and chosen to never collide with
+  # the weekly Monday regression crons below (08:15/08:45 UTC) either. GitHub Actions cron is
+  # UTC-only and cannot read workflow_dispatch inputs, so this is a second, separate trigger from
+  # the manual one below.
   #
   # Also: weekly Monday regression runs, once against dev and once against qa, staggered 30
   # minutes apart from each other and deliberately off minute 0 so neither lands on the same
-  # instant as the hourly smoke cron above (a same-instant collision would race both jobs on
-  # the gh-pages force-push, since there's no concurrency group on this workflow). schedule
-  # triggers carry no workflow_dispatch inputs, so github.event.schedule (the literal cron
-  # string that fired) is the only way the steps below can tell these two crons apart from each
-  # other and from the hourly smoke one. The qa cron string ('45 8 * * 1') is necessarily
-  # duplicated literally in three places in this file — here, in the job-level `environment:`
-  # key, and in the "Add Allure environment and executor info" step's Environment= line — because
-  # the job-level `environment:` key is evaluated before any step runs and so cannot reference
-  # steps.grep-tag.outputs.*. If this cron's time ever changes, all three spots must change
-  # together or they'll silently desync.
+  # instant as the daily smoke crons above or each other (a same-instant collision would race
+  # both jobs on the gh-pages force-push, since there's no concurrency group on this workflow).
+  # schedule triggers carry no workflow_dispatch inputs, so github.event.schedule (the literal
+  # cron string that fired) is the only way the steps below can tell these crons apart from each
+  # other. There are now TWO qa cron strings, each necessarily duplicated literally in three
+  # places in this file — here, in the job-level `environment:` key, and in the "Add Allure
+  # environment and executor info" step's Environment= line — because the job-level
+  # `environment:` key is evaluated before any step runs and so cannot reference
+  # steps.grep-tag.outputs.*: '30 6 * * *' (daily qa-smoke) and '45 8 * * 1' (weekly qa-regression).
+  # If either cron's time ever changes, all three spots for that cron must change together or
+  # they'll silently desync. The daily dev-smoke cron ('0 6 * * *') needs no such handling — it
+  # falls through to the existing default behavior (no workflow_dispatch inputs means
+  # test_subset/environment are both empty, which already resolves to smoke/dev), exactly like
+  # the old hourly cron did.
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 6 * * *'  # Daily 06:00 UTC — smoke against dev (falls through to defaults)
+    - cron: '30 6 * * *'  # Daily 06:30 UTC — smoke against qa
     - cron: '15 8 * * 1'  # Monday 08:15 UTC — regression against dev
     - cron: '45 8 * * 1'  # Monday 08:45 UTC — regression against qa
   workflow_dispatch:
@@ -47,12 +55,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     # This cannot reference steps.grep-tag.outputs.* — the job-level `environment:` key is
-    # evaluated before any step runs. So the qa-regression cron string ('45 8 * * 1') has to be
-    # hardcoded here too, duplicating the schedule: list entry above and the Environment= line
-    # in the "Add Allure environment and executor info" step. workflow_dispatch's explicit
-    # environment input wins if present; otherwise the qa-regression cron resolves to 'qa';
-    # otherwise (the dev-regression cron, the hourly smoke cron, push, PR) default to 'dev'.
-    environment: ${{ github.event.inputs.environment || (github.event.schedule == '45 8 * * 1' && 'qa') || 'dev' }}
+    # evaluated before any step runs. So both qa cron strings ('30 6 * * *' daily qa-smoke and
+    # '45 8 * * 1' weekly qa-regression) have to be hardcoded here too, duplicating the
+    # schedule: list entries above and the Environment= line in the "Add Allure environment and
+    # executor info" step. workflow_dispatch's explicit environment input wins if present;
+    # otherwise either qa cron resolves to 'qa'; otherwise (the dev-smoke cron, the dev-regression
+    # cron, push, PR) default to 'dev'.
+    environment: ${{ github.event.inputs.environment || (github.event.schedule == '45 8 * * 1' && 'qa') || (github.event.schedule == '30 6 * * *' && 'qa') || 'dev' }}
     permissions:
       contents: write
       deployments: write
@@ -91,20 +100,25 @@ jobs:
       #   specific cron from the rest.
       # - github.event.schedule == '15 8 * * 1' (Monday 08:15 UTC weekly cron): --grep
       #   @regression / folder=Regression / env_folder=Dev.
-      # - workflow_dispatch with test_subset=regression: --grep @regression / folder=Regression.
-      # - everything else (the hourly smoke schedule — no inputs available; ordinary push/PR —
+      # - github.event.schedule == '30 6 * * *' (daily 06:30 UTC smoke cron): --grep @smoke /
+      #   folder=Smoke / env_folder=QA. Same reasoning as the weekly qa-regression cron above —
+      #   this is the only way to single out the qa-smoke run from the dev-smoke run, since both
+      #   are schedule triggers with no inputs at all.
+      # - everything else (the daily 06:00 UTC dev-smoke schedule — no inputs available, falls
+      #   through to the defaults below exactly like the old hourly cron did; ordinary push/PR —
       #   no inputs at all; workflow_dispatch with test_subset=smoke, the default): --grep
       #   @smoke / folder=Smoke.
-      # - For the two cases above that aren't one of the two new weekly crons, env_folder mirrors
+      # - For the cases above that aren't one of the three named crons, env_folder mirrors
       #   the same environment input used for the job's `environment:` key and
       #   environment.properties below (github.event.inputs.environment || 'dev'). QA must stay
       #   a literal uppercase mapping ("qa" -> "QA") rather than generic shell capitalization
       #   (e.g. ${var^}), which would produce "Qa" instead of "QA".
-      # The qa cron string ('45 8 * * 1') is duplicated literally in three places in this file
-      # (the schedule: trigger list, the job-level `environment:` key, and here) because the
-      # job-level `environment:` key is evaluated before any step runs and so cannot reference
-      # this step's outputs — see the comments at those two other spots. If this cron's time
-      # ever changes, all three spots must change together.
+      # There are now TWO qa cron strings, each duplicated literally in three places in this file
+      # (the schedule: trigger list, the job-level `environment:` key, and here): '30 6 * * *'
+      # (daily qa-smoke) and '45 8 * * 1' (weekly qa-regression). This is because the job-level
+      # `environment:` key is evaluated before any step runs and so cannot reference this step's
+      # outputs — see the comments at those two other spots. If either cron's time ever changes,
+      # all three spots for that cron must change together.
       - name: Resolve test grep tag
         id: grep-tag
         env:
@@ -120,6 +134,10 @@ jobs:
             echo "grep_arg=--grep @regression" >> "$GITHUB_OUTPUT"
             echo "folder=Regression" >> "$GITHUB_OUTPUT"
             echo "env_folder=Dev" >> "$GITHUB_OUTPUT"
+          elif [ "$SCHEDULE" == "30 6 * * *" ]; then
+            echo "grep_arg=--grep @smoke" >> "$GITHUB_OUTPUT"
+            echo "folder=Smoke" >> "$GITHUB_OUTPUT"
+            echo "env_folder=QA" >> "$GITHUB_OUTPUT"
           else
             if [ "$TEST_SUBSET" == "regression" ]; then
               echo "grep_arg=--grep @regression" >> "$GITHUB_OUTPUT"
@@ -147,13 +165,14 @@ jobs:
 
       - name: Add Allure environment and executor info
         # Environment= mirrors the job-level `environment:` key's expression exactly (including
-        # the hardcoded qa-regression cron string '45 8 * * 1' — see the comments at the
-        # schedule: trigger list and the job-level `environment:` key for why this can't
-        # reference steps.grep-tag.outputs.* instead). Without this, a schedule-triggered run
-        # would always label itself Environment=dev here even on the qa-regression cron.
+        # the hardcoded qa cron strings '45 8 * * 1' (weekly qa-regression) and '30 6 * * *'
+        # (daily qa-smoke) — see the comments at the schedule: trigger list and the job-level
+        # `environment:` key for why this can't reference steps.grep-tag.outputs.* instead).
+        # Without this, a schedule-triggered run would always label itself Environment=dev here
+        # even on one of the qa crons.
         run: |
           cat > allure-results/environment.properties <<EOF
-          Environment=${{ github.event.inputs.environment || (github.event.schedule == '45 8 * * 1' && 'qa') || 'dev' }}
+          Environment=${{ github.event.inputs.environment || (github.event.schedule == '45 8 * * 1' && 'qa') || (github.event.schedule == '30 6 * * *' && 'qa') || 'dev' }}
           Base.URL=${{ env.BASE_URL }}
           Browser=chromium
           Node.Version=20
