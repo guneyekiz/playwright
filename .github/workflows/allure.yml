@@ -158,6 +158,11 @@ jobs:
         # which takes precedence over the config file. This suite is network-bound (waiting on
         # the remote demo site) rather than CPU-bound, so running above the runner's 2 physical
         # cores (ubuntu-latest) is reasonable despite fullyParallel already being set in config.
+        # id: run-tests — needed because continue-on-error: true means the job itself stays
+        # green and keeps deploying the report even when tests fail, so steps.run-tests.outcome
+        # is the only reliable pass/fail signal for the Slack notification step further below,
+        # not the job's own status.
+        id: run-tests
         env:
           GREP_ARG: ${{ steps.grep-tag.outputs.grep_arg }}
         run: npx playwright test $GREP_ARG --workers=4
@@ -194,6 +199,19 @@ jobs:
 
       - name: Verify Allure report generation
         run: ls -la allure-report
+
+      # Reads the Allure-generated summary widget for the pass/fail/broken/skipped/total counts
+      # used by the Slack notification step further below. jq is preinstalled on ubuntu-latest.
+      # Confirmed shape of allure-report/widgets/summary.json:
+      # {"statistic":{"failed":0,"broken":0,"skipped":0,"passed":9,"unknown":0,"total":9},...}
+      - name: Extract test result counts
+        id: test-counts
+        run: |
+          echo "passed=$(jq '.statistic.passed' allure-report/widgets/summary.json)" >> "$GITHUB_OUTPUT"
+          echo "failed=$(jq '.statistic.failed' allure-report/widgets/summary.json)" >> "$GITHUB_OUTPUT"
+          echo "broken=$(jq '.statistic.broken' allure-report/widgets/summary.json)" >> "$GITHUB_OUTPUT"
+          echo "skipped=$(jq '.statistic.skipped' allure-report/widgets/summary.json)" >> "$GITHUB_OUTPUT"
+          echo "total=$(jq '.statistic.total' allure-report/widgets/summary.json)" >> "$GITHUB_OUTPUT"
 
       - name: Generate timestamp
         id: timestamp
@@ -369,3 +387,84 @@ jobs:
       - name: Output Playwright report URL
         run: |
          echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ steps.grep-tag.outputs.folder }}/${{ steps.grep-tag.outputs.env_folder }}/${{ env.timestamp }}/playwright/index.html"
+
+      # Only notifies on schedule / workflow_dispatch runs — push/PR runs (which also resolve to
+      # the smoke subset) stay silent, otherwise every commit to main would page the channel.
+      # Fires on every qualifying run, pass or fail, via `always()`, so the channel gets a running
+      # history rather than failures-only. continue-on-error: true so a missing secret or a failed
+      # POST can't flip an otherwise-good run red.
+      #
+      # Builds its own gh-pages report URL rather than reusing the "Output Allure/Playwright
+      # report URL" steps above — those two construct
+      # https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/...,
+      # but github.repository already includes "owner/repo" (e.g. guneyekiz/playwright), so that
+      # doubles the owner segment and doesn't match the real Pages URL
+      # (https://guneyekiz.github.io/playwright/). That's a pre-existing bug in those two echo
+      # steps specifically — not fixed here, just avoided in this new step by deriving the repo
+      # name from GITHUB_REPOSITORY instead.
+      - name: Notify Slack
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          OUTCOME: ${{ steps.run-tests.outcome }}
+          FOLDER: ${{ steps.grep-tag.outputs.folder }}
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
+          PASSED: ${{ steps.test-counts.outputs.passed }}
+          FAILED: ${{ steps.test-counts.outputs.failed }}
+          BROKEN: ${{ steps.test-counts.outputs.broken }}
+          SKIPPED: ${{ steps.test-counts.outputs.skipped }}
+          TOTAL: ${{ steps.test-counts.outputs.total }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL secret is not set — skipping Slack notification."
+            exit 0
+          fi
+
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          REPORT_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/$REPO_NAME/reports/$FOLDER/$ENV_FOLDER/latest/allure/index.html"
+
+          if [ "$OUTCOME" == "success" ]; then
+            STATUS_TEXT=":white_check_mark: Passed"
+          else
+            STATUS_TEXT=":x: Failed"
+          fi
+
+          PAYLOAD=$(jq -n \
+            --arg status "$STATUS_TEXT" \
+            --arg subset "$FOLDER / $ENV_FOLDER" \
+            --arg passed "$PASSED" \
+            --arg failed "$FAILED" \
+            --arg broken "$BROKEN" \
+            --arg skipped "$SKIPPED" \
+            --arg total "$TOTAL" \
+            --arg report_url "$REPORT_URL" \
+            --arg run_url "$RUN_URL" \
+            '{
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: ("*\($status)* — \($subset)")
+                  }
+                },
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: ("Passed: *\($passed)*  Failed: *\($failed)*  Broken: *\($broken)*  Skipped: *\($skipped)*  Total: *\($total)*")
+                  }
+                },
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: ("<\($report_url)|Allure Report>  |  <\($run_url)|GitHub Actions Run>")
+                  }
+                }
+              ]
+            }')
+
+          curl -sf -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"

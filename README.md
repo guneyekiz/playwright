@@ -79,6 +79,8 @@ BASIC_AUTH_PASSWORD=...
 
 `BASIC_AUTH_USERNAME`/`BASIC_AUTH_PASSWORD` are for `tests/features/basic-auth.spec.ts` and `tests/security/basic-auth.security.spec.ts` (the `/basic_auth` page's own documented demo credential, `admin`/`admin` — routed through env vars rather than hardcoded, per this repo's convention). For CI, these also need adding as secrets to both the `dev` and `qa` GitHub Environments alongside the existing `BASE_URL`/`TEST_USERNAME`/`TEST_PASSWORD`, or both basic-auth specs will fail in CI.
 
+CI also posts pass/fail results to Slack on scheduled/manual runs (see CI section below), which needs a `SLACK_WEBHOOK_URL` secret — unlike the five secrets above, this one is a single **repository-level** Actions secret (Settings → Secrets and variables → Actions), not duplicated per-Environment, since one Slack channel covers all environments. A maintainer creates it via Slack's "Incoming Webhooks" app and pastes the URL in.
+
 `playwright.config.ts` also reads an optional `SLOWMO` (ms) to slow down headed runs for debugging.
 
 If `.env.dev` is missing or empty, `baseURL` resolves to `undefined` and tests fail with a confusing navigation error rather than a clear "missing config" message — check this first if a fresh clone fails immediately.
@@ -102,6 +104,8 @@ Tests are tagged `@smoke` (fast critical-path checks) or `@regression` (everythi
 ## CI
 
 A single workflow, **allure.yml**, in `.github/workflows/`. Runs on push/PR to `main` (both greps for `@smoke`), builds the Playwright + Allure reports, and deploys both to `gh-pages` (served at https://guneyekiz.github.io/playwright/). Also supports manual `workflow_dispatch` with a `dev`/`qa` environment choice and a `smoke`/`regression` test-subset choice (default `smoke`; `regression` only ever runs via this manual trigger, or via the scheduled regression runs below), plus four scheduled runs (cron, UTC): a daily `@smoke` sweep — against `dev` at 06:00 and against `qa` at 06:30 — and a weekly Monday regression sweep — `@regression` against `dev` at 08:15 and against `qa` at 08:45 — all four staggered 15-30 minutes apart to avoid guaranteed cron collisions. Reports are organized run-folder-first, then by environment — `reports/<Smoke|Regression>/<Dev|QA>/<timestamp|latest>/<allure|playwright>/` — so each subset/environment combination keeps its own independent "latest" report. Reports from before this environment split (no `Dev`/`QA` segment) remain on `gh-pages` but are no longer linked from the generated index.
+
+Scheduled and manual (`workflow_dispatch`) runs also post a pass/fail summary (counts + report/run links) to Slack via Incoming Webhook, on every qualifying run regardless of outcome — push/PR runs stay silent. Requires a repository-level `SLACK_WEBHOOK_URL` secret (see Setup above); if it's unset the step no-ops instead of failing the run.
 
 ## Working with Claude Code
 
