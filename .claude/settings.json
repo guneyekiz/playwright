@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(winget install --id GitHub.cli --silent --accept-package-agreements --accept-source-agreements)"
+      "PowerShell(winget install --id GitHub.cli --silent --accept-package-agreements --accept-source-agreements)",
+      "Bash(npx --yes js-yaml .github/workflows/allure.yml)"
     ]
   }
 }

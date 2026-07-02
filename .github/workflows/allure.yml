@@ -380,13 +380,25 @@ jobs:
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN2 }}
         run: git push -fu https://${ACCESS_TOKEN}@github.com/guneyekiz/playwright gh-pages
 
+      # github.repository is "owner/repo", so the repo name is stripped out of it in shell before
+      # appending to the Pages host — interpolating github.repository whole after the owner would
+      # double the owner segment and produce a URL that doesn't match the real Pages URL
+      # (https://guneyekiz.github.io/playwright/).
       - name: Output Allure report URL
+        env:
+          FOLDER: ${{ steps.grep-tag.outputs.folder }}
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
         run: |
-         echo "Allure report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ steps.grep-tag.outputs.folder }}/${{ steps.grep-tag.outputs.env_folder }}/${{ env.timestamp }}/allure/index.html"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          echo "Allure report URL: https://${GITHUB_REPOSITORY_OWNER}.github.io/$REPO_NAME/reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/allure/index.html"
 
       - name: Output Playwright report URL
+        env:
+          FOLDER: ${{ steps.grep-tag.outputs.folder }}
+          ENV_FOLDER: ${{ steps.grep-tag.outputs.env_folder }}
         run: |
-         echo "Playwright report URL: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/${{ steps.grep-tag.outputs.folder }}/${{ steps.grep-tag.outputs.env_folder }}/${{ env.timestamp }}/playwright/index.html"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          echo "Playwright report URL: https://${GITHUB_REPOSITORY_OWNER}.github.io/$REPO_NAME/reports/$FOLDER/$ENV_FOLDER/${{ env.timestamp }}/playwright/index.html"
 
       # Only notifies on schedule / workflow_dispatch runs — push/PR runs (which also resolve to
       # the smoke subset) stay silent, otherwise every commit to main would page the channel.
@@ -394,14 +406,9 @@ jobs:
       # history rather than failures-only. continue-on-error: true so a missing secret or a failed
       # POST can't flip an otherwise-good run red.
       #
-      # Builds its own gh-pages report URL rather than reusing the "Output Allure/Playwright
-      # report URL" steps above — those two construct
-      # https://${{ github.repository_owner }}.github.io/${{ github.repository }}/reports/...,
-      # but github.repository already includes "owner/repo" (e.g. guneyekiz/playwright), so that
-      # doubles the owner segment and doesn't match the real Pages URL
-      # (https://guneyekiz.github.io/playwright/). That's a pre-existing bug in those two echo
-      # steps specifically — not fixed here, just avoided in this new step by deriving the repo
-      # name from GITHUB_REPOSITORY instead.
+      # The report URL derives the repo name from GITHUB_REPOSITORY ("owner/repo") in shell,
+      # same construction as the two "Output ... report URL" steps above — see the comment there
+      # for why github.repository can't be interpolated whole after the owner.
       - name: Notify Slack
         if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         continue-on-error: true
