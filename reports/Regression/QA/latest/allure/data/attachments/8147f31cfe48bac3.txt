@@ -1,0 +1,84 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/broken-images.spec.ts >> Broken Images >> the broken images respond with 404
+- Location: tests/features/broken-images.spec.ts:24:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: apiRequestContext.get: Test timeout of 30000ms exceeded.
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - link "Fork me on GitHub":
+      - /url: https://github.com/tourdedave/the-internet
+      - img "Fork me on GitHub" [ref=e5] [cursor=pointer]
+    - generic [ref=e7]:
+      - heading "Broken Images" [level=3] [ref=e8]
+      - img [ref=e9]
+      - img [ref=e10]
+      - img [ref=e11]
+  - generic [ref=e13]:
+    - separator [ref=e14]
+    - generic [ref=e15]:
+      - text: Powered by
+      - link "Elemental Selenium" [ref=e16] [cursor=pointer]:
+        - /url: http://elementalselenium.com/
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { BrokenImagesPage } from '../pages/BrokenImagesPage';
+  3  | 
+  4  | // This page's whole premise is two intentionally broken <img> sources (see Finding 9 in
+  5  | // docs/app-exploration.md) — a 404 is the expected/correct behavior here, not a defect.
+  6  | test.describe('Broken Images', { tag: '@regression' }, () => {
+  7  |   test('renders exactly three images in the example section', async ({ page }) => {
+  8  |     const brokenImagesPage = new BrokenImagesPage(page);
+  9  |     await brokenImagesPage.goto();
+  10 | 
+  11 |     await expect(brokenImagesPage.images).toHaveCount(3);
+  12 |   });
+  13 | 
+  14 |   test('the first two images are broken and the third loads successfully', async ({ page }) => {
+  15 |     const brokenImagesPage = new BrokenImagesPage(page);
+  16 |     await brokenImagesPage.goto();
+  17 | 
+  18 |     await expect(brokenImagesPage.images.nth(2)).toBeVisible();
+  19 |     expect(await brokenImagesPage.isBroken(0)).toBe(true);
+  20 |     expect(await brokenImagesPage.isBroken(1)).toBe(true);
+  21 |     expect(await brokenImagesPage.isBroken(2)).toBe(false);
+  22 |   });
+  23 | 
+  24 |   test('the broken images respond with 404', async ({ page }) => {
+  25 |     const brokenImagesPage = new BrokenImagesPage(page);
+  26 |     await brokenImagesPage.goto();
+  27 |     await expect(brokenImagesPage.images.nth(2)).toBeVisible();
+  28 | 
+  29 |     const srcs = await brokenImagesPage.images.evaluateAll((imgs) =>
+  30 |       imgs.map((img) => (img as HTMLImageElement).src)
+  31 |     );
+> 32 |     const statuses = await Promise.all(srcs.map(async (src) => (await page.request.get(src)).status()));
+     |                                                                                    ^ Error: apiRequestContext.get: Test timeout of 30000ms exceeded.
+  33 | 
+  34 |     expect(statuses.sort()).toEqual([200, 404, 404]);
+  35 |   });
+  36 | });
+  37 | 
+```

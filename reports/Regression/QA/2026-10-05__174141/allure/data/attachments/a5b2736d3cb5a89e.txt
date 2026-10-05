@@ -1,0 +1,94 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/javascript-alerts.spec.ts >> JavaScript Alerts >> clicking Cancel on the confirm reports Cancel
+- Location: tests/features/javascript-alerts.spec.ts:23:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for getByRole('button', { name: 'Click for JS Confirm' })
+
+```
+
+# Page snapshot
+
+```yaml
+- iframe [ref=e2]:
+  - generic [active] [ref=f1e1]:
+    - generic [ref=f1e2]:
+      - img [ref=f1e3]
+      - generic [ref=f1e5]: Application error
+      - paragraph [ref=f1e6]:
+        - text: An error occurred in the application and your page could not be served. If you are the application owner,
+        - link "check your logs for details" [ref=f1e7] [cursor=pointer]:
+          - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+        - text: . You can do this from the Heroku CLI with the command
+        - code [ref=f1e8]: heroku logs --tail
+    - img [ref=f1e10]
+    - link [ref=f1e15] [cursor=pointer]:
+      - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+      - img [ref=f1e16]
+```
+
+# Test source
+
+```ts
+  1  | import { Page } from '@playwright/test';
+  2  | import { BasePage } from './BasePage';
+  3  | 
+  4  | export class JavascriptAlertsPage extends BasePage {
+  5  |   readonly alertButton = this.page.getByRole('button', { name: 'Click for JS Alert' });
+  6  |   readonly confirmButton = this.page.getByRole('button', { name: 'Click for JS Confirm' });
+  7  |   readonly promptButton = this.page.getByRole('button', { name: 'Click for JS Prompt' });
+  8  |   readonly resultText = this.page.locator('#result');
+  9  | 
+  10 |   constructor(page: Page) {
+  11 |     super(page);
+  12 |   }
+  13 | 
+  14 |   async goto() {
+  15 |     await super.goto('/javascript_alerts');
+  16 |   }
+  17 | 
+  18 |   // Each trigger registers a one-time page.on('dialog', ...) handler before clicking,
+  19 |   // since the click itself is what synchronously opens the native dialog.
+  20 |   async triggerAlertAndAccept() {
+  21 |     this.page.once('dialog', (dialog) => dialog.accept());
+  22 |     await this.alertButton.click();
+  23 |   }
+  24 | 
+  25 |   async triggerConfirmAndAccept() {
+  26 |     this.page.once('dialog', (dialog) => dialog.accept());
+  27 |     await this.confirmButton.click();
+  28 |   }
+  29 | 
+  30 |   async triggerConfirmAndDismiss() {
+  31 |     this.page.once('dialog', (dialog) => dialog.dismiss());
+> 32 |     await this.confirmButton.click();
+     |                              ^ Error: locator.click: Test timeout of 30000ms exceeded.
+  33 |   }
+  34 | 
+  35 |   async triggerPromptAndAcceptWithText(text: string) {
+  36 |     this.page.once('dialog', (dialog) => dialog.accept(text));
+  37 |     await this.promptButton.click();
+  38 |   }
+  39 | 
+  40 |   async triggerPromptAndDismiss() {
+  41 |     this.page.once('dialog', (dialog) => dialog.dismiss());
+  42 |     await this.promptButton.click();
+  43 |   }
+  44 | }
+  45 | 
+```

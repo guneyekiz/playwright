@@ -1,0 +1,70 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/checkboxes.spec.ts >> Checkboxes >> checkbox 1 starts unchecked and checkbox 2 starts checked
+- Location: tests/features/checkboxes.spec.ts:5:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: expect(locator).not.toBeChecked() failed
+
+Locator: getByRole('checkbox').first()
+Expected: not checked
+Error: element(s) not found
+
+Call log:
+  - Expect "not toBeChecked" with timeout 5000ms
+  - waiting for getByRole('checkbox').first()
+
+```
+
+```yaml
+- iframe
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { CheckboxesPage } from '../pages/CheckboxesPage';
+  3  | 
+  4  | test.describe('Checkboxes', { tag: '@regression' }, () => {
+  5  |   test('checkbox 1 starts unchecked and checkbox 2 starts checked', async ({ page }) => {
+  6  |     const checkboxesPage = new CheckboxesPage(page);
+  7  |     await checkboxesPage.goto();
+  8  | 
+> 9  |     await expect(checkboxesPage.checkbox(0)).not.toBeChecked();
+     |                                                  ^ Error: expect(locator).not.toBeChecked() failed
+  10 |     await expect(checkboxesPage.checkbox(1)).toBeChecked();
+  11 |   });
+  12 | 
+  13 |   test('toggling checkbox 1 checks it', async ({ page }) => {
+  14 |     const checkboxesPage = new CheckboxesPage(page);
+  15 |     await checkboxesPage.goto();
+  16 | 
+  17 |     await checkboxesPage.checkbox(0).check();
+  18 | 
+  19 |     await expect(checkboxesPage.checkbox(0)).toBeChecked();
+  20 |   });
+  21 | 
+  22 |   test('toggling checkbox 2 unchecks it', async ({ page }) => {
+  23 |     const checkboxesPage = new CheckboxesPage(page);
+  24 |     await checkboxesPage.goto();
+  25 | 
+  26 |     await checkboxesPage.checkbox(1).uncheck();
+  27 | 
+  28 |     await expect(checkboxesPage.checkbox(1)).not.toBeChecked();
+  29 |   });
+  30 | });
+  31 | 
+```

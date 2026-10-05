@@ -1,0 +1,16 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: security/headers.security.spec.ts >> response security headers (/login) >> sends clickjacking and MIME-sniffing protections
+- Location: tests/security/headers.security.spec.ts:10:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```

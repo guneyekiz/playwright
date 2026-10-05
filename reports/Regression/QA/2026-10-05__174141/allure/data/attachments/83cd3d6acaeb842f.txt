@@ -1,0 +1,100 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/basic-auth.spec.ts >> Basic Auth >> is rejected with the wrong password
+- Location: tests/features/basic-auth.spec.ts:27:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 401
+Received: 503
+```
+
+# Page snapshot
+
+```yaml
+- iframe [ref=e2]:
+  - generic [active] [ref=f1e1]:
+    - generic [ref=f1e2]:
+      - img [ref=f1e3]
+      - generic [ref=f1e5]: Application error
+      - paragraph [ref=f1e6]:
+        - text: An error occurred in the application and your page could not be served. If you are the application owner,
+        - link "check your logs for details" [ref=f1e7] [cursor=pointer]:
+          - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+        - text: . You can do this from the Heroku CLI with the command
+        - code [ref=f1e8]: heroku logs --tail
+    - img [ref=f1e10]
+    - link [ref=f1e15] [cursor=pointer]:
+      - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+      - img [ref=f1e16]
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { BasicAuthPage } from '../pages/BasicAuthPage';
+  3  | 
+  4  | // Chromium's page.goto() rejects credentials embedded in the URL itself
+  5  | // (https://user:pass@host/path) with net::ERR_INVALID_AUTH_CREDENTIALS — see Finding 5 in
+  6  | // docs/app-exploration.md. browser.newContext({ httpCredentials }) is the reliable approach,
+  7  | // so every test here creates its own context instead of using the default `page` fixture.
+  8  | const BASIC_AUTH_USERNAME = process.env.BASIC_AUTH_USERNAME!;
+  9  | const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD!;
+  10 | 
+  11 | test.describe('Basic Auth', { tag: '@regression' }, () => {
+  12 |   test('authenticates and renders the protected page with correct credentials', async ({ browser }) => {
+  13 |     const context = await browser.newContext({
+  14 |       httpCredentials: { username: BASIC_AUTH_USERNAME, password: BASIC_AUTH_PASSWORD },
+  15 |     });
+  16 |     const page = await context.newPage();
+  17 |     const basicAuthPage = new BasicAuthPage(page);
+  18 | 
+  19 |     const response = await page.goto('/basic_auth');
+  20 | 
+  21 |     expect(response?.status()).toBe(200);
+  22 |     await expect(basicAuthPage.congratsMessage).toContainText('Congratulations');
+  23 | 
+  24 |     await context.close();
+  25 |   });
+  26 | 
+  27 |   test('is rejected with the wrong password', async ({ browser }) => {
+  28 |     const context = await browser.newContext({
+  29 |       httpCredentials: { username: BASIC_AUTH_USERNAME, password: 'wrongpassword' },
+  30 |     });
+  31 |     const page = await context.newPage();
+  32 | 
+  33 |     const response = await page.goto('/basic_auth');
+  34 | 
+> 35 |     expect(response?.status()).toBe(401);
+     |                                ^ Error: expect(received).toBe(expected) // Object.is equality
+  36 | 
+  37 |     await context.close();
+  38 |   });
+  39 | 
+  40 |   test('is rejected with no credentials', async ({ browser }) => {
+  41 |     const context = await browser.newContext();
+  42 |     const page = await context.newPage();
+  43 | 
+  44 |     const response = await page.goto('/basic_auth');
+  45 | 
+  46 |     expect(response?.status()).toBe(401);
+  47 | 
+  48 |     await context.close();
+  49 |   });
+  50 | });
+  51 | 
+```

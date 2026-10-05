@@ -1,0 +1,84 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/horizontal-slider.spec.ts >> Horizontal Slider >> pressing the right arrow repeatedly moves toward the max value
+- Location: tests/features/horizontal-slider.spec.ts:25:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.focus: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for getByRole('slider')
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - link "Fork me on GitHub":
+      - /url: https://github.com/tourdedave/the-internet
+      - img "Fork me on GitHub" [ref=e5] [cursor=pointer]
+    - generic [ref=e7]:
+      - heading "Horizontal Slider" [level=3] [ref=e8]
+      - heading "Set the focus on the slider (by clicking on it) and use the arrow keys to move it right and left. Or click and drag the slider with your mouse. It will indicate the value of the slider to the right." [level=4] [ref=e9]
+      - generic [ref=e10]:
+        - slider [ref=e11]: "0"
+        - text: "0"
+  - generic [ref=e13]:
+    - separator [ref=e14]
+    - generic [ref=e15]:
+      - text: Powered by
+      - link "Elemental Selenium" [ref=e16] [cursor=pointer]:
+        - /url: http://elementalselenium.com/
+```
+
+# Test source
+
+```ts
+  1  | import { Page } from '@playwright/test';
+  2  | import { BasePage } from './BasePage';
+  3  | 
+  4  | export class HorizontalSliderPage extends BasePage {
+  5  |   readonly slider = this.page.getByRole('slider');
+  6  |   readonly rangeValue = this.page.locator('#range');
+  7  | 
+  8  |   constructor(page: Page) {
+  9  |     super(page);
+  10 |   }
+  11 | 
+  12 |   async goto() {
+  13 |     await super.goto('/horizontal_slider');
+  14 |   }
+  15 | 
+  16 |   // <input type="range"> doesn't support fill(); the page's own instructions say to focus
+  17 |   // the slider and use arrow keys (or drag), so that's what this drives. Each press moves
+  18 |   // by the slider's step (0.5).
+  19 |   async increase(times = 1) {
+> 20 |     await this.slider.focus();
+     |                       ^ Error: locator.focus: Test timeout of 30000ms exceeded.
+  21 |     for (let i = 0; i < times; i++) {
+  22 |       await this.slider.press('ArrowRight');
+  23 |     }
+  24 |   }
+  25 | 
+  26 |   async decrease(times = 1) {
+  27 |     await this.slider.focus();
+  28 |     for (let i = 0; i < times; i++) {
+  29 |       await this.slider.press('ArrowLeft');
+  30 |     }
+  31 |   }
+  32 | }
+  33 | 
+```
