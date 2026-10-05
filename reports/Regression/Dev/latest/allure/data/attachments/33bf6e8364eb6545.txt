@@ -1,0 +1,71 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/javascript-alerts.spec.ts >> JavaScript Alerts >> clicking OK on the alert reports a successful click
+- Location: tests/features/javascript-alerts.spec.ts:5:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: page.goto: Test timeout of 30000ms exceeded.
+Call log:
+  - navigating to "https://the-internet.herokuapp.com/javascript_alerts", waiting until "load"
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - link "Fork me on GitHub":
+      - /url: https://github.com/tourdedave/the-internet
+      - img "Fork me on GitHub"
+    - generic [ref=e6]:
+      - heading "JavaScript Alerts" [level=3] [ref=e7]
+      - paragraph [ref=e8]: Here are some examples of different JavaScript alerts which can be troublesome for automation
+      - list [ref=e9]:
+        - listitem [ref=e10]:
+          - button "Click for JS Alert" [ref=e11] [cursor=pointer]
+        - listitem [ref=e12]:
+          - button "Click for JS Confirm" [ref=e13] [cursor=pointer]
+        - listitem [ref=e14]:
+          - button "Click for JS Prompt" [ref=e15] [cursor=pointer]
+      - heading "Result:" [level=4] [ref=e16]
+      - paragraph
+  - generic [ref=e18]:
+    - separator [ref=e19]
+    - generic [ref=e20]:
+      - text: Powered by
+      - link "Elemental Selenium" [ref=e21] [cursor=pointer]:
+        - /url: http://elementalselenium.com/
+```
+
+# Test source
+
+```ts
+  1  | import { Page } from '@playwright/test';
+  2  | 
+  3  | export class BasePage {
+  4  |   readonly page: Page;
+  5  | 
+  6  |   constructor(page: Page) {
+  7  |     this.page = page;
+  8  |   }
+  9  | 
+  10 |   async goto(path: string) {
+> 11 |     await this.page.goto(path);
+     |                     ^ Error: page.goto: Test timeout of 30000ms exceeded.
+  12 |   }
+  13 | }
+  14 | 
+```

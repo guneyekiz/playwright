@@ -1,0 +1,87 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/dynamic-loading.spec.ts >> Dynamic Loading >> Example 1: hidden element is shown after the delay
+- Location: tests/features/dynamic-loading.spec.ts:12:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  locator('#finish')
+Expected: visible
+Received: hidden
+
+Call log:
+  - Expect "toBeVisible" with timeout 10000ms
+  - waiting for locator('#finish')
+    6 × locator resolved to <div id="finish">…</div>
+      - unexpected value "hidden"
+
+```
+
+```yaml
+- link "Fork me on GitHub":
+  - /url: https://github.com/tourdedave/the-internet
+  - img "Fork me on GitHub"
+- heading "Dynamically Loaded Page Elements" [level=3]
+- 'heading "Example 1: Element on page that is hidden" [level=4]'
+- text: Loading...
+- img
+- separator
+- text: Powered by
+- link "Elemental Selenium":
+  - /url: http://elementalselenium.com/
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { DynamicLoadingPage } from '../pages/DynamicLoadingPage';
+  3  | 
+  4  | // Both examples involve a genuine ~5s async delay (the site's own setTimeout) after
+  5  | // clicking Start before the "Hello World!" text appears, which is longer than Playwright's
+  6  | // default 5000ms assertion timeout. Rather than reach for waitForTimeout, the specific
+  7  | // post-delay assertions below are given a longer explicit timeout so toBeVisible()'s
+  8  | // auto-wait/retry has enough room to outlast the real delay.
+  9  | const POST_DELAY_TIMEOUT = 10_000;
+  10 | 
+  11 | test.describe('Dynamic Loading', { tag: '@regression' }, () => {
+  12 |   test('Example 1: hidden element is shown after the delay', async ({ page }) => {
+  13 |     const dynamicLoadingPage = new DynamicLoadingPage(page);
+  14 |     await dynamicLoadingPage.gotoExample1();
+  15 | 
+  16 |     await expect(dynamicLoadingPage.finishText).toBeHidden();
+  17 | 
+  18 |     await dynamicLoadingPage.start();
+  19 | 
+> 20 |     await expect(dynamicLoadingPage.finishText).toBeVisible({ timeout: POST_DELAY_TIMEOUT });
+     |                                                 ^ Error: expect(locator).toBeVisible() failed
+  21 |     await expect(dynamicLoadingPage.finishText).toHaveText('Hello World!');
+  22 |   });
+  23 | 
+  24 |   test('Example 2: element is rendered from nothing after the delay', async ({ page }) => {
+  25 |     const dynamicLoadingPage = new DynamicLoadingPage(page);
+  26 |     await dynamicLoadingPage.gotoExample2();
+  27 | 
+  28 |     await expect(dynamicLoadingPage.finishText).toHaveCount(0);
+  29 | 
+  30 |     await dynamicLoadingPage.start();
+  31 | 
+  32 |     await expect(dynamicLoadingPage.finishText).toBeVisible({ timeout: POST_DELAY_TIMEOUT });
+  33 |     await expect(dynamicLoadingPage.finishText).toHaveText('Hello World!');
+  34 |   });
+  35 | });
+  36 | 
+```

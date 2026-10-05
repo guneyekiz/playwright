@@ -1,0 +1,40 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: security/redirector.security.spec.ts >> Redirect Link (/redirector) >> redirect link points to a relative, same-origin target
+- Location: tests/security/redirector.security.spec.ts:10:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - link "Fork me on GitHub":
+      - /url: https://github.com/tourdedave/the-internet
+      - img "Fork me on GitHub" [ref=e5] [cursor=pointer]
+    - generic [ref=e7]:
+      - heading "Redirection" [level=3] [ref=e8]
+      - paragraph [ref=e9]:
+        - text: This is separate from directly returning a redirection status code, in that some browsers cannot handle a raw redirect status code without a destination page as part of the HTTP response.
+        - text: Click
+        - link "here" [ref=e10] [cursor=pointer]:
+          - /url: redirect
+        - text: to trigger a redirect (and be taken to the status codes page).
+  - generic [ref=e12]:
+    - separator [ref=e13]
+    - generic [ref=e14]:
+      - text: Powered by
+      - link "Elemental Selenium" [ref=e15] [cursor=pointer]:
+        - /url: http://elementalselenium.com/
+```

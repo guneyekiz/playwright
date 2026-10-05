@@ -1,0 +1,69 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/dropdown.spec.ts >> Dropdown >> starts with the disabled placeholder option selected
+- Location: tests/features/dropdown.spec.ts:5:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: expect(locator).toHaveValue(expected) failed
+
+Locator: getByRole('combobox')
+Expected: ""
+Error: element(s) not found
+
+Call log:
+  - Expect "toHaveValue" with timeout 5000ms
+  - waiting for getByRole('combobox')
+
+```
+
+```yaml
+- iframe
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { DropdownPage } from '../pages/DropdownPage';
+  3  | 
+  4  | test.describe('Dropdown', { tag: '@regression' }, () => {
+  5  |   test('starts with the disabled placeholder option selected', async ({ page }) => {
+  6  |     const dropdownPage = new DropdownPage(page);
+  7  |     await dropdownPage.goto();
+  8  | 
+> 9  |     await expect(dropdownPage.dropdown).toHaveValue('');
+     |                                         ^ Error: expect(locator).toHaveValue(expected) failed
+  10 |   });
+  11 | 
+  12 |   test('selecting Option 1 updates the selected value', async ({ page }) => {
+  13 |     const dropdownPage = new DropdownPage(page);
+  14 |     await dropdownPage.goto();
+  15 | 
+  16 |     await dropdownPage.selectOption1();
+  17 | 
+  18 |     await expect(dropdownPage.dropdown).toHaveValue('1');
+  19 |   });
+  20 | 
+  21 |   test('selecting Option 2 updates the selected value', async ({ page }) => {
+  22 |     const dropdownPage = new DropdownPage(page);
+  23 |     await dropdownPage.goto();
+  24 | 
+  25 |     await dropdownPage.selectOption2();
+  26 | 
+  27 |     await expect(dropdownPage.dropdown).toHaveValue('2');
+  28 |   });
+  29 | });
+  30 | 
+```

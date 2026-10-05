@@ -1,0 +1,104 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/add-remove-elements.spec.ts >> Add/Remove Elements >> adds one Delete button per click of Add Element
+- Location: tests/features/add-remove-elements.spec.ts:12:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: expect(locator).toHaveCount(expected) failed
+
+Locator:  getByRole('button', { name: 'Delete' })
+Expected: 1
+Received: 0
+
+Call log:
+  - Expect "toHaveCount" with timeout 5000ms
+  - waiting for getByRole('button', { name: 'Delete' })
+    6 × locator resolved to 0 elements
+      - unexpected value "0"
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - link "Fork me on GitHub":
+      - /url: https://github.com/tourdedave/the-internet
+      - img "Fork me on GitHub" [ref=e5] [cursor=pointer]
+    - generic [ref=e6]:
+      - heading "Add/Remove Elements" [level=3] [ref=e7]
+      - generic [ref=e8]:
+        - button "Add Element" [active] [ref=e9] [cursor=pointer]
+        - separator [ref=e10]
+  - generic [ref=e12]:
+    - separator [ref=e13]
+    - generic [ref=e14]:
+      - text: Powered by
+      - link "Elemental Selenium" [ref=e15] [cursor=pointer]:
+        - /url: http://elementalselenium.com/
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { AddRemoveElementsPage } from '../pages/AddRemoveElementsPage';
+  3  | 
+  4  | test.describe('Add/Remove Elements', { tag: '@regression' }, () => {
+  5  |   test('starts with no Delete buttons', async ({ page }) => {
+  6  |     const addRemovePage = new AddRemoveElementsPage(page);
+  7  |     await addRemovePage.goto();
+  8  | 
+  9  |     await expect(addRemovePage.deleteButtons).toHaveCount(0);
+  10 |   });
+  11 | 
+  12 |   test('adds one Delete button per click of Add Element', async ({ page }) => {
+  13 |     const addRemovePage = new AddRemoveElementsPage(page);
+  14 |     await addRemovePage.goto();
+  15 | 
+  16 |     await addRemovePage.addElement();
+> 17 |     await expect(addRemovePage.deleteButtons).toHaveCount(1);
+     |                                               ^ Error: expect(locator).toHaveCount(expected) failed
+  18 | 
+  19 |     await addRemovePage.addElement();
+  20 |     await addRemovePage.addElement();
+  21 |     await expect(addRemovePage.deleteButtons).toHaveCount(3);
+  22 |   });
+  23 | 
+  24 |   test('removes one Delete button per click, leaving the rest', async ({ page }) => {
+  25 |     const addRemovePage = new AddRemoveElementsPage(page);
+  26 |     await addRemovePage.goto();
+  27 | 
+  28 |     await addRemovePage.addElement();
+  29 |     await addRemovePage.addElement();
+  30 |     await addRemovePage.addElement();
+  31 | 
+  32 |     await addRemovePage.deleteFirstElement();
+  33 |     await expect(addRemovePage.deleteButtons).toHaveCount(2);
+  34 |   });
+  35 | 
+  36 |   test('removing the last Delete button returns to the empty state', async ({ page }) => {
+  37 |     const addRemovePage = new AddRemoveElementsPage(page);
+  38 |     await addRemovePage.goto();
+  39 | 
+  40 |     await addRemovePage.addElement();
+  41 |     await addRemovePage.deleteFirstElement();
+  42 | 
+  43 |     await expect(addRemovePage.deleteButtons).toHaveCount(0);
+  44 |   });
+  45 | });
+  46 | 
+```

@@ -1,0 +1,101 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: security/basic-auth.security.spec.ts >> Basic Auth (/basic_auth) >> rejects an unknown username with the same generic 401 (no enumeration)
+- Location: tests/security/basic-auth.security.spec.ts:37:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 401
+Received: 503
+```
+
+# Page snapshot
+
+```yaml
+- iframe [ref=e2]:
+  - generic [active] [ref=f1e1]:
+    - generic [ref=f1e2]:
+      - img [ref=f1e3]
+      - generic [ref=f1e5]: Application error
+      - paragraph [ref=f1e6]:
+        - text: An error occurred in the application and your page could not be served. If you are the application owner,
+        - link "check your logs for details" [ref=f1e7] [cursor=pointer]:
+          - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+        - text: . You can do this from the Heroku CLI with the command
+        - code [ref=f1e8]: heroku logs --tail
+    - img [ref=f1e10]
+    - link [ref=f1e15] [cursor=pointer]:
+      - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+      - img [ref=f1e16]
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { BasicAuthPage } from '../pages/BasicAuthPage';
+  3  | 
+  4  | // /basic_auth's documented demo credentials (admin/admin) are not this repo's
+  5  | // app-login TEST_USERNAME/TEST_PASSWORD, so they get their own env vars per
+  6  | // repo convention. Wrong values below are intentionally-bad literals used only
+  7  | // to exercise negative paths, which is fine per that same convention.
+  8  | const VALID_USERNAME = process.env.BASIC_AUTH_USERNAME!;
+  9  | const VALID_PASSWORD = process.env.BASIC_AUTH_PASSWORD!;
+  10 | 
+  11 | test.describe('Basic Auth (/basic_auth)', { tag: '@regression' }, () => {
+  12 |   test('grants access with correct credentials', async ({ browser }) => {
+  13 |     const context = await browser.newContext({
+  14 |       httpCredentials: { username: VALID_USERNAME, password: VALID_PASSWORD },
+  15 |     });
+  16 |     const page = await context.newPage();
+  17 |     const basicAuthPage = new BasicAuthPage(page);
+  18 | 
+  19 |     await basicAuthPage.goto();
+  20 | 
+  21 |     await expect(basicAuthPage.congratsMessage).toContainText('Congratulations');
+  22 |     await context.close();
+  23 |   });
+  24 | 
+  25 |   test('rejects a wrong password with a generic 401', async ({ browser }) => {
+  26 |     const context = await browser.newContext({
+  27 |       httpCredentials: { username: VALID_USERNAME, password: 'wrong-password' },
+  28 |     });
+  29 |     const page = await context.newPage();
+  30 | 
+  31 |     const response = await page.goto('/basic_auth');
+  32 | 
+  33 |     expect(response?.status()).toBe(401);
+  34 |     await context.close();
+  35 |   });
+  36 | 
+  37 |   test('rejects an unknown username with the same generic 401 (no enumeration)', async ({ browser }) => {
+  38 |     const context = await browser.newContext({
+  39 |       httpCredentials: { username: 'no-such-user', password: 'wrong-password' },
+  40 |     });
+  41 |     const page = await context.newPage();
+  42 | 
+  43 |     const response = await page.goto('/basic_auth');
+  44 | 
+  45 |     // Confirmed live: a bad username and a bad password both return a plain 401 with
+  46 |     // no distinguishing body content, so the endpoint does not leak which credential
+  47 |     // was wrong (no username-enumeration channel).
+> 48 |     expect(response?.status()).toBe(401);
+     |                                ^ Error: expect(received).toBe(expected) // Object.is equality
+  49 |     await context.close();
+  50 |   });
+  51 | });
+  52 | 
+```
