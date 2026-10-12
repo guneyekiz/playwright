@@ -1,0 +1,87 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/horizontal-slider.spec.ts >> Horizontal Slider >> pressing the left arrow after increasing decreases the value again
+- Location: tests/features/horizontal-slider.spec.ts:35:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: expect(locator).toHaveText(expected) failed
+
+Locator:  locator('#range')
+Expected: "1"
+Received: "0"
+
+Call log:
+  - Expect "toHaveText" with timeout 5000ms
+  - waiting for locator('#range')
+    5 × locator resolved to <span id="range">0</span>
+      - unexpected value "0"
+
+```
+
+```yaml
+- text: "0"
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { HorizontalSliderPage } from '../pages/HorizontalSliderPage';
+  3  | 
+  4  | // <input type="range"> doesn't support locator.fill(); moving it requires keyboard arrow
+  5  | // presses (or a mouse drag) while focused, per the page's own on-screen instructions.
+  6  | test.describe('Horizontal Slider', { tag: '@regression' }, () => {
+  7  |   test('starts at 0', async ({ page }) => {
+  8  |     const sliderPage = new HorizontalSliderPage(page);
+  9  |     await sliderPage.goto();
+  10 | 
+  11 |     await expect(sliderPage.rangeValue).toHaveText('0');
+  12 |     await expect(sliderPage.slider).toHaveValue('0');
+  13 |   });
+  14 | 
+  15 |   test('pressing the right arrow increases the displayed value by one step', async ({ page }) => {
+  16 |     const sliderPage = new HorizontalSliderPage(page);
+  17 |     await sliderPage.goto();
+  18 | 
+  19 |     await sliderPage.increase(1);
+  20 | 
+  21 |     await expect(sliderPage.rangeValue).toHaveText('0.5');
+  22 |     await expect(sliderPage.slider).toHaveValue('0.5');
+  23 |   });
+  24 | 
+  25 |   test('pressing the right arrow repeatedly moves toward the max value', async ({ page }) => {
+  26 |     const sliderPage = new HorizontalSliderPage(page);
+  27 |     await sliderPage.goto();
+  28 | 
+  29 |     await sliderPage.increase(10);
+  30 | 
+  31 |     await expect(sliderPage.rangeValue).toHaveText('5');
+  32 |     await expect(sliderPage.slider).toHaveValue('5');
+  33 |   });
+  34 | 
+  35 |   test('pressing the left arrow after increasing decreases the value again', async ({ page }) => {
+  36 |     const sliderPage = new HorizontalSliderPage(page);
+  37 |     await sliderPage.goto();
+  38 | 
+  39 |     await sliderPage.increase(3);
+  40 |     await sliderPage.decrease(1);
+  41 | 
+> 42 |     await expect(sliderPage.rangeValue).toHaveText('1');
+     |                                         ^ Error: expect(locator).toHaveText(expected) failed
+  43 |     await expect(sliderPage.slider).toHaveValue('1');
+  44 |   });
+  45 | });
+  46 | 
+```

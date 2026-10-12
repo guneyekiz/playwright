@@ -1,0 +1,82 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/horizontal-slider.spec.ts >> Horizontal Slider >> pressing the right arrow increases the displayed value by one step
+- Location: tests/features/horizontal-slider.spec.ts:15:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+```
+Error: locator.focus: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for getByRole('slider')
+
+```
+
+# Page snapshot
+
+```yaml
+- iframe [ref=e2]:
+  - generic [active] [ref=f1e1]:
+    - generic [ref=f1e2]:
+      - img [ref=f1e3]
+      - generic [ref=f1e5]: Application error
+      - paragraph [ref=f1e6]:
+        - text: An error occurred in the application and your page could not be served. If you are the application owner,
+        - link "check your logs for details" [ref=f1e7] [cursor=pointer]:
+          - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+        - text: . You can do this from the Heroku CLI with the command
+        - code [ref=f1e8]: heroku logs --tail
+    - img [ref=f1e10]
+    - link [ref=f1e15] [cursor=pointer]:
+      - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+      - img [ref=f1e16]
+```
+
+# Test source
+
+```ts
+  1  | import { Page } from '@playwright/test';
+  2  | import { BasePage } from './BasePage';
+  3  | 
+  4  | export class HorizontalSliderPage extends BasePage {
+  5  |   readonly slider = this.page.getByRole('slider');
+  6  |   readonly rangeValue = this.page.locator('#range');
+  7  | 
+  8  |   constructor(page: Page) {
+  9  |     super(page);
+  10 |   }
+  11 | 
+  12 |   async goto() {
+  13 |     await super.goto('/horizontal_slider');
+  14 |   }
+  15 | 
+  16 |   // <input type="range"> doesn't support fill(); the page's own instructions say to focus
+  17 |   // the slider and use arrow keys (or drag), so that's what this drives. Each press moves
+  18 |   // by the slider's step (0.5).
+  19 |   async increase(times = 1) {
+> 20 |     await this.slider.focus();
+     |                       ^ Error: locator.focus: Test timeout of 30000ms exceeded.
+  21 |     for (let i = 0; i < times; i++) {
+  22 |       await this.slider.press('ArrowRight');
+  23 |     }
+  24 |   }
+  25 | 
+  26 |   async decrease(times = 1) {
+  27 |     await this.slider.focus();
+  28 |     for (let i = 0; i < times; i++) {
+  29 |       await this.slider.press('ArrowLeft');
+  30 |     }
+  31 |   }
+  32 | }
+  33 | 
+```

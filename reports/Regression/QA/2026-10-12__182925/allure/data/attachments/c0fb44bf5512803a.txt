@@ -1,0 +1,22 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/forgot-password.spec.ts >> Forgot Password >> submitting the form currently returns a 500 (known server-side bug)
+- Location: tests/features/forgot-password.spec.ts:12:7
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded.
+```
+
+# Page snapshot
+
+```yaml
+- heading "Internal Server Error" [level=1] [ref=e2]
+```
