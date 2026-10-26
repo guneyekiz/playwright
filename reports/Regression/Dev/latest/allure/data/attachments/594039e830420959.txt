@@ -1,0 +1,74 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: features/forgot-password.spec.ts >> Forgot Password >> submitting the form currently returns a 500 (known server-side bug)
+- Location: tests/features/forgot-password.spec.ts:12:7
+
+# Error details
+
+```
+Error: expect(received).toBe(expected) // Object.is equality
+
+Expected: 500
+Received: 303
+```
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - text: The Internet
+  - generic [ref=e4]:
+    - link "Fork me on GitHub":
+      - /url: https://github.com/saucelabs/the-internet
+      - img "Fork me on GitHub" [ref=e5] [cursor=pointer]
+    - generic [ref=e6]: Your e-mail's been sent!
+  - generic [ref=e9]:
+    - text: Powered by
+    - link "Elemental Selenium" [ref=e10] [cursor=pointer]:
+      - /url: http://elementalselenium.com/
+    - text: and
+    - link "Sauce Labs" [ref=e11] [cursor=pointer]:
+      - /url: https://saucelabs.com/
+```
+
+# Test source
+
+```ts
+  1  | import { test, expect } from '@playwright/test';
+  2  | import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+  3  | 
+  4  | // This spec intentionally asserts on a 500 response, not a success path. Submitting this
+  5  | // form currently returns a genuine HTTP 500 from the server (confirmed live and documented
+  6  | // as Finding 2 in docs/app-exploration.md) — the page still renders a generic response and
+  7  | // stays on /forgot_password, it isn't a hard crash, but the server-side handler errors out.
+  8  | // This is a regression spec locking in that *current* (buggy) behavior: if the server-side
+  9  | // bug is ever fixed, this test will start failing and needs to be updated to assert success
+  10 | // instead — that failure is the point, it's how a behavior change here gets noticed.
+  11 | test.describe('Forgot Password', { tag: '@regression' }, () => {
+  12 |   test('submitting the form currently returns a 500 (known server-side bug)', async ({ page }) => {
+  13 |     const forgotPasswordPage = new ForgotPasswordPage(page);
+  14 |     await forgotPasswordPage.goto();
+  15 | 
+  16 |     await forgotPasswordPage.fillEmail('test@example.com');
+  17 | 
+  18 |     const [response] = await Promise.all([
+  19 |       page.waitForResponse(
+  20 |         (r) => r.url().includes('/forgot_password') && r.request().method() === 'POST'
+  21 |       ),
+  22 |       forgotPasswordPage.submitButton.click(),
+  23 |     ]);
+  24 | 
+> 25 |     expect(response.status()).toBe(500);
+     |                               ^ Error: expect(received).toBe(expected) // Object.is equality
+  26 |     // The app doesn't hard-crash on the error — it stays on the same page.
+  27 |     await expect(page).toHaveURL(/\/forgot_password$/);
+  28 |   });
+  29 | });
+  30 | 
+```
